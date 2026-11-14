@@ -8,8 +8,9 @@
     "capture": "tsx --env-file-if-exists=../.env src/stage-capture.ts",
     "typecheck": "tsc -p .",
     "chert": "tsx --env-file-if-exists=../.env --env-file-if-exists=.env.local src/chert.ts start",
-    "facetime": "tsx --env-file-if-exists=../.env src/facetime.ts",
-    "chat": "tsx --env-file-if-exists=../.env src/chat.ts"
+    "facetime": "tsx --env-file-if-exists=../.env --env-file-if-exists=.env.local src/facetime.ts",
+    "chat": "tsx --env-file-if-exists=../.env src/chat.ts",
+    "check:livekit": "tsx --env-file-if-exists=../.env --env-file-if-exists=.env.local src/check-livekit.ts"
   },
   "dependencies": {
     "@livekit/agents": "1.9.4",
