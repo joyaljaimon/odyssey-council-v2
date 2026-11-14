@@ -6,7 +6,7 @@ import { mintTokens } from "./facetime.ts";
 const room = new Room();
 try {
   const tokens = await mintTokens(`odyssey-check-${Date.now()}`);
-  await room.connect(process.env.LIVEKIT_URL!, tokens.agent, { autoSubscribe: false });
+  await room.connect(process.env.LIVEKIT_URL!, tokens.agent, { autoSubscribe: false, dynacast: false });
   console.log(`✓ LiveKit OK: joined room "${room.name}" on ${new URL(process.env.LIVEKIT_URL!).host}`);
 } catch (err) {
   console.error(`✗ LiveKit check failed: ${(err as Error).message}`);
