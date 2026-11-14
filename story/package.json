@@ -8,8 +8,17 @@
   "scripts": {
     "download": "curl -L -o raw/odyssey-butler.txt https://www.gutenberg.org/cache/epub/1727/pg1727.txt",
     "build:passages": "tsx scripts/build-passages.ts",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "build:embeddings": "tsx --env-file-if-exists=../.env scripts/build-embeddings.ts",
+    "check": "tsx scripts/check-quotes.ts",
+    "eval": "tsx --env-file-if-exists=../.env scripts/eval-mapping.ts"
   },
-  "dependencies": { "@odyssey/contracts": "*" },
-  "devDependencies": { "tsx": "^4.19.0", "typescript": "^5.6.0", "@types/node": "^22.0.0" }
+  "dependencies": {
+    "@odyssey/contracts": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
 }

@@ -1,36 +1,264 @@
 [
   {
-    "id": "sirens",
-    "title": "The Sirens",
-    "books": [12],
-    "passageIds": [],
-    "summary": "Warned by Circe, Odysseus plugs his crew's ears with wax and has himself tied to the mast so he can hear the Sirens' song without steering the ship onto their rocks.",
-    "characters": ["odysseus", "circe"],
-    "themes": ["temptation", "self-control", "planning ahead"],
+    "id": "telemachus",
+    "title": "Telemachus and the Suitors",
+    "books": [1, 2],
+    "passageIds": ["1.2", "1.18", "1.19", "1.22", "2.1", "2.10"],
+    "summary": "Twenty years after Odysseus left, suitors have taken over his house, eating his wealth and pressing Penelope to remarry. His son Telemachus feels powerless until Athena, disguised as a family friend, tells him to stop waiting, call an assembly, speak up and sail out to find news of his father.",
+    "characters": ["athena"],
+    "themes": ["finding your voice", "growing up", "standing up for yourself", "taking initiative"],
     "lessons": [
-      "Plan for temptation before it arrives, not in the moment.",
-      "Ask the people around you to hold you to your commitment."
+      "Waiting for someone else to fix things keeps you small; take the first step yourself.",
+      "Courage often arrives after you act, not before.",
+      "Say plainly, in public, what you will no longer accept."
     ],
-    "problemTags": ["temptation", "distraction", "phone", "social media", "self-control", "addiction"],
-    "keyQuotes": [],
-    "sceneId": "sirens",
-    "locationId": "sirens-isle"
+    "problemTags": ["confidence", "speaking up", "boundaries", "people taking advantage", "feeling powerless", "growing up", "imposter syndrome", "confrontation", "roommates", "family", "independence", "self-doubt"],
+    "keyQuotes": [
+      { "passageId": "1.19", "text": "I would, however, urge you to set about trying to get rid of these suitors at once." },
+      { "passageId": "1.22", "text": "she had given Telemachus courage, and had made him think more than ever about his father" },
+      { "passageId": "2.1", "text": "when he took his place in his father’s seat even the oldest councillors made way for him" }
+    ],
+    "sceneId": "telemachus",
+    "locationId": "ithaca"
+  },
+  {
+    "id": "calypso",
+    "title": "Calypso's Island",
+    "books": [5],
+    "passageIds": ["1.2", "5.2", "5.13", "5.14", "5.15", "5.18", "5.22"],
+    "summary": "For seven years Odysseus lives on the beautiful island of the nymph Calypso, who offers him immortality if he stays. He sits on the shore every day longing for home. When the gods order his release he builds a raft with his own hands and chooses a hard, mortal road home over a comfortable life that is not his.",
+    "characters": ["odysseus", "athena", "poseidon"],
+    "themes": ["feeling stuck", "golden cage", "choosing what matters", "comfort vs purpose"],
+    "lessons": [
+      "A comfortable life that isn't yours is still a prison.",
+      "Knowing what you want is the first plank of the raft.",
+      "Choosing the harder, truer path is allowed, even when the easy one is generous."
+    ],
+    "problemTags": ["stuck", "dead-end job", "golden handcuffs", "comfortable but unhappy", "career change", "quitting", "relationship", "homesick", "purpose", "big decision", "leaving", "unfulfilled"],
+    "keyQuotes": [
+      { "passageId": "5.18", "text": "Nevertheless, I want to get home, and can think of nothing else." },
+      { "passageId": "5.18", "text": "If some god wrecks me when I am on the sea, I will bear it and make the best of it." },
+      { "passageId": "5.13", "text": "make yourself a large raft with an upper deck that it may carry you safely over the sea" }
+    ],
+    "sceneId": "calypso",
+    "locationId": "ogygia"
+  },
+  {
+    "id": "phaeacians",
+    "title": "The Phaeacians",
+    "books": [6, 7, 8, 9],
+    "passageIds": ["6.13", "6.14", "6.15", "8.47", "9.1", "9.2"],
+    "summary": "Shipwrecked and naked, Odysseus washes up on Scheria with nothing. He asks the princess Nausicaa for help, is welcomed by the Phaeacians, and when a bard sings of Troy he weeps openly. Only then does he say who he is and tell his story, and these strangers carry him home.",
+    "characters": ["odysseus", "athena"],
+    "themes": ["asking for help", "starting over", "vulnerability", "telling your story"],
+    "lessons": [
+      "Asking for help is not weakness; it is how Odysseus got home.",
+      "You can start over with nothing but your story.",
+      "Letting people see your grief lets them help you."
+    ],
+    "problemTags": ["asking for help", "starting over", "new city", "new school", "lonely", "rock bottom", "vulnerability", "pride", "making friends", "networking", "job interview", "moving"],
+    "keyQuotes": [
+      { "passageId": "6.14", "text": "have pity upon me, for you are the first person I have met, and I know no one else in this country" },
+      { "passageId": "6.15", "text": "There is no accounting for luck; Jove gives prosperity to rich and poor just as he chooses, so you must take what he has seen fit to send you, and make the best of it." },
+      { "passageId": "8.47", "text": "Ulysses was overcome as he heard him, and his cheeks were wet with tears" }
+    ],
+    "sceneId": "phaeacians",
+    "locationId": "scheria"
   },
   {
     "id": "lotus-eaters",
     "title": "The Lotus Eaters",
     "books": [9],
-    "passageIds": [],
+    "passageIds": ["9.5", "9.6"],
     "summary": "Crew members who eat the lotus forget their wish to go home, and Odysseus has to drag them back to the ships.",
     "characters": ["odysseus"],
-    "themes": ["forgetting your goal", "comfort", "procrastination"],
+    "themes": ["forgetting your goal", "comfort", "procrastination", "numbing"],
     "lessons": [
       "Comfort that makes you forget your goal is a trap.",
-      "Sometimes you need someone to pull you back to the ship."
+      "Sometimes you need someone to pull you back to the ship.",
+      "Leave quickly, before the next bite."
     ],
-    "problemTags": ["procrastination", "laziness", "scrolling", "motivation", "stuck", "comfort"],
-    "keyQuotes": [],
+    "problemTags": ["procrastination", "laziness", "scrolling", "motivation", "stuck", "comfort", "video games", "binge watching", "netflix", "numbing", "studying", "distraction"],
+    "keyQuotes": [
+      { "passageId": "9.5", "text": "gave them to eat of the lotus, which was so delicious that those who ate of it left off caring about home" }
+    ],
     "sceneId": "lotus-eaters",
     "locationId": "lotus-land"
+  },
+  {
+    "id": "cyclops",
+    "title": "The Cyclops",
+    "books": [9],
+    "passageIds": ["9.24", "9.28", "9.38", "9.39", "9.41"],
+    "summary": "Trapped in the cave of the giant Polyphemus, Odysseus cannot win by strength, so he wins by wit: he calls himself 'Noman', blinds the giant and escapes under the sheep. Then, out of pride, he shouts his real name from the ship, and the Cyclops' curse to his father Poseidon haunts the rest of the voyage.",
+    "characters": ["odysseus", "poseidon"],
+    "themes": ["brains over brawn", "pride", "ego", "consequences"],
+    "lessons": [
+      "When you can't overpower a problem, outthink it.",
+      "Win quietly; bragging can cost you everything you just won.",
+      "Your ego can turn a victory into a ten-year problem."
+    ],
+    "problemTags": ["bully", "bigger opponent", "boss", "ego", "pride", "bragging", "revenge", "anger", "social media", "outsmart", "conflict", "underdog"],
+    "keyQuotes": [
+      { "passageId": "9.28", "text": "Noman is killing me by fraud; no man is killing me by force." },
+      { "passageId": "9.38", "text": "say it was the valiant warrior Ulysses, son of Laertes, who lives in Ithaca" },
+      { "passageId": "9.41", "text": "Hear me, great Neptune; if I am indeed your own true begotten son, grant that Ulysses may never reach his home alive" }
+    ],
+    "sceneId": "cyclops",
+    "locationId": "cyclops-island"
+  },
+  {
+    "id": "aeolus",
+    "title": "Aeolus and the Bag of Winds",
+    "books": [10],
+    "passageIds": ["10.2", "10.3", "10.4"],
+    "summary": "The wind-king Aeolus gives Odysseus every storm wind tied in a bag, leaving only the west wind to blow him home. Within sight of Ithaca, Odysseus, who has steered for nine days without rest, falls asleep. His jealous crew open the bag looking for gold, and the winds blow them all the way back.",
+    "characters": ["odysseus"],
+    "themes": ["trust", "burnout", "jealousy", "so close to the goal"],
+    "lessons": [
+      "Doing everything yourself until you collapse is a plan to fail at the finish line.",
+      "Tell your team what is in the bag; secrets breed suspicion.",
+      "Setbacks near the end are painful, not final."
+    ],
+    "problemTags": ["burnout", "exhausted", "micromanaging", "teamwork", "trust", "jealousy", "envy", "setback", "almost there", "sabotage", "delegation", "communication", "group project"],
+    "keyQuotes": [
+      { "passageId": "10.3", "text": "I, being then dead beat, fell into a light sleep, for I had never let the rudder out of my own hands" },
+      { "passageId": "10.4", "text": "Thus they talked and evil counsels prevailed. They loosed the sack, whereupon the wind flew howling forth" },
+      { "passageId": "10.4", "text": "I bore it, covered myself up, and lay down in the ship" }
+    ],
+    "sceneId": "aeolus",
+    "locationId": "aeolia"
+  },
+  {
+    "id": "circe",
+    "title": "Circe",
+    "books": [10],
+    "passageIds": ["10.17", "10.23", "10.27", "10.32", "10.39", "10.40"],
+    "summary": "The enchantress Circe turns Odysseus's scouts into pigs. Armed with a protective herb and advice from Hermes, Odysseus resists her spell, makes her swear to do no harm and frees his men. They stay a full year in comfort until the crew remind him it is time to go home, and Circe then helps them on their way.",
+    "characters": ["circe", "odysseus"],
+    "themes": ["manipulation", "toxic environments", "boundaries", "transformation"],
+    "lessons": [
+      "Prepare your defence before you walk into a place that changes people.",
+      "Set your terms before you trust: make them swear.",
+      "Even a good place can become a place you forget to leave."
+    ],
+    "problemTags": ["toxic", "manipulation", "bad influence", "peer pressure", "partying", "drinking", "toxic relationship", "boundaries", "losing myself", "cult", "red flags", "trust"],
+    "keyQuotes": [
+      { "passageId": "10.17", "text": "she drugged it with wicked poisons to make them forget their homes" },
+      { "passageId": "10.27", "text": "I shall certainly not consent to go to bed with you unless you will first take your solemn oath to plot no further harm against me." },
+      { "passageId": "10.39", "text": "Sir, it is time you began to think about going home" }
+    ],
+    "sceneId": "circe",
+    "locationId": "aeaea"
+  },
+  {
+    "id": "underworld",
+    "title": "The Underworld",
+    "books": [11],
+    "passageIds": ["11.6", "11.8", "11.15", "11.42"],
+    "summary": "To learn the way home, Odysseus travels to the land of the dead. The prophet Teiresias tells him what lies ahead; he tries three times to embrace his mother's ghost; and Achilles, the greatest hero of all, tells him he would rather be a poor servant alive than a king among the dead.",
+    "characters": ["odysseus"],
+    "themes": ["grief", "loss", "seeking guidance", "what really matters"],
+    "lessons": [
+      "Sometimes you have to face the past to find the way forward.",
+      "Grief is love with nowhere to go; it is allowed to hurt.",
+      "Being alive, even humbly, is worth more than glory."
+    ],
+    "problemTags": ["grief", "loss", "death", "mourning", "parent died", "regret", "advice", "mentor", "meaning", "ambition", "fame", "fear of the future"],
+    "keyQuotes": [
+      { "passageId": "11.42", "text": "I would rather be a paid servant in a poor man’s house and be above ground than king of kings among the dead" },
+      { "passageId": "11.15", "text": "Thrice I sprang towards her and tried to clasp her in my arms, but each time she flitted from my embrace as it were a dream or phantom" },
+      { "passageId": "11.8", "text": "If you leave these flocks unharmed and think of nothing but of getting home, you may yet after much hardship reach Ithaca" }
+    ],
+    "sceneId": "underworld",
+    "locationId": "underworld"
+  },
+  {
+    "id": "sirens",
+    "title": "The Sirens",
+    "books": [12],
+    "passageIds": ["12.5", "12.13", "12.14", "12.15", "12.16"],
+    "summary": "Warned by Circe, Odysseus plugs his crew's ears with wax and has himself tied to the mast so he can hear the Sirens' song without steering the ship onto their rocks.",
+    "characters": ["odysseus", "circe"],
+    "themes": ["temptation", "self-control", "planning ahead", "commitment devices"],
+    "lessons": [
+      "Plan for temptation before it arrives, not in the moment.",
+      "Ask the people around you to hold you to your commitment.",
+      "Tie yourself to the mast: make the bad choice impossible in advance."
+    ],
+    "problemTags": ["temptation", "distraction", "phone", "social media", "self-control", "addiction", "willpower", "diet", "gambling", "habits", "quitting", "focus"],
+    "keyQuotes": [
+      { "passageId": "12.13", "text": "If I beg and pray you to set me free, then bind me more tightly still." },
+      { "passageId": "12.14", "text": "Then I stopped the ears of all my men, and they bound me hands and feet to the mast" },
+      { "passageId": "12.16", "text": "they quickened their stroke, and Eurylochus and Perimedes bound me with still stronger bonds till we had got out of hearing of the Sirens’ voices" }
+    ],
+    "sceneId": "sirens",
+    "locationId": "sirens-isle"
+  },
+  {
+    "id": "scylla-charybdis",
+    "title": "Scylla and Charybdis",
+    "books": [12],
+    "passageIds": ["12.9", "12.10", "12.20"],
+    "summary": "Odysseus must sail a strait between Scylla, a six-headed monster who will take six men, and Charybdis, a whirlpool that could swallow the whole ship. There is no option without loss. He chooses the smaller certain loss to save the ship, and grieves for it.",
+    "characters": ["odysseus", "circe"],
+    "themes": ["impossible choices", "trade-offs", "lesser of two evils", "leadership"],
+    "lessons": [
+      "When every option costs something, choose the loss you can survive.",
+      "Don't freeze between two rocks; decide and row hard.",
+      "Accepting a loss is not the same as failing."
+    ],
+    "problemTags": ["hard decision", "dilemma", "choosing", "two bad options", "trade-off", "layoffs", "breakup", "sacrifice", "anxiety", "indecisive", "leadership", "overthinking"],
+    "keyQuotes": [
+      { "passageId": "12.9", "text": "Is there no way,’ said I, ‘of escaping Charybdis, and at the same time keeping Scylla off when she is trying to harm my men?" },
+      { "passageId": "12.10", "text": "your best chance will be to get by her as fast as ever you can" },
+      { "passageId": "12.20", "text": "Then we entered the Straits in great fear of mind, for on the one hand was Scylla, and on the other dread Charybdis" }
+    ],
+    "sceneId": "scylla-charybdis",
+    "locationId": "scylla-charybdis"
+  },
+  {
+    "id": "helios-cattle",
+    "title": "The Cattle of the Sun",
+    "books": [12],
+    "passageIds": ["11.8", "12.22", "12.26", "12.28", "12.29"],
+    "summary": "Stranded and hungry on the island of the Sun, the crew have promised not to touch his sacred cattle. While Odysseus sleeps, Eurylochus persuades them that one shortcut won't matter. They feast, and Zeus destroys the ship. Only Odysseus, who kept his word, survives.",
+    "characters": ["odysseus"],
+    "themes": ["patience", "shortcuts", "keeping promises", "delayed gratification"],
+    "lessons": [
+      "The shortcut that breaks your promise costs more than the hunger.",
+      "Hold on a little longer; patience is often the whole test.",
+      "Be careful whose counsel you follow when you are tired and hungry."
+    ],
+    "problemTags": ["impatience", "shortcut", "cheating", "temptation", "money", "debt", "spending", "impulsive", "peer pressure", "integrity", "delayed gratification", "promises"],
+    "keyQuotes": [
+      { "passageId": "12.26", "text": "we have meat and drink in the ship, let us mind, therefore, and not touch the cattle, or we shall suffer for it" },
+      { "passageId": "12.28", "text": "All deaths are bad enough but there is none so bad as famine." },
+      { "passageId": "12.29", "text": "Thus spoke Eurylochus, and the men approved his words." }
+    ],
+    "sceneId": "helios-cattle",
+    "locationId": "thrinacia"
+  },
+  {
+    "id": "return-to-ithaca",
+    "title": "The Return to Ithaca",
+    "books": [13, 16, 21, 23],
+    "passageIds": ["13.27", "13.29", "13.30", "16.21", "21.39", "23.18"],
+    "summary": "After twenty years Odysseus wakes on Ithaca and does not recognise his own home. Disguised as a beggar, he waits, reunites with his son, strings the great bow no suitor could bend and takes back his house. Penelope tests him with the secret of the bed he built around a living olive tree, and they are finally reunited.",
+    "characters": ["odysseus", "athena"],
+    "themes": ["coming home", "patience", "rebuilding", "trust", "identity"],
+    "lessons": [
+      "Coming home can feel strange; give yourself time to recognise it.",
+      "Rebuild trust with proof, not speeches.",
+      "What you built with your own hands, like the olive-tree bed, can't be moved."
+    ],
+    "problemTags": ["coming home", "reunion", "reconnecting", "family", "trust", "rebuilding", "comeback", "finishing", "graduation", "relationship", "estranged", "identity"],
+    "keyQuotes": [
+      { "passageId": "13.29", "text": "Then Ulysses rejoiced at finding himself again in his own land, and kissed the bounteous soil" },
+      { "passageId": "21.39", "text": "strung it as easily as a skilled bard strings a new peg of his lyre" },
+      { "passageId": "23.18", "text": "There was a young olive growing within the precincts of the house" }
+    ],
+    "sceneId": "return-to-ithaca",
+    "locationId": "ithaca"
   }
 ]

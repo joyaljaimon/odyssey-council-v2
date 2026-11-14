@@ -1,0 +1,19 @@
+{
+  "_comment": "The 'Your Ithaca' reflection. Brain fills the {placeholders} at end_session; Stage renders it on /card.",
+  "title": "Your Ithaca",
+  "fields": [
+    { "key": "problem", "label": "Your storm", "hint": "The user's problem in their own words, under 12 words." },
+    { "key": "episode", "label": "Your episode", "hint": "Episode title, e.g. 'The Sirens'." },
+    { "key": "quote", "label": "From the Odyssey", "hint": "One keyQuote from that episode, with its passage id, e.g. 12.13." },
+    { "key": "lesson", "label": "The lesson", "hint": "One of the episode's lessons, reworded for the user." },
+    { "key": "action", "label": "This week", "hint": "One concrete action the user agreed to, starting with a verb." }
+  ],
+  "spoken": "Your Ithaca: {lesson} This week, {action}",
+  "example": {
+    "problem": "I keep scrolling my phone instead of studying",
+    "episode": "The Sirens",
+    "quote": { "passageId": "12.13", "text": "If I beg and pray you to set me free, then bind me more tightly still." },
+    "lesson": "Don't trust willpower in the moment; tie yourself to the mast beforehand.",
+    "action": "leave your phone in the kitchen for your first two study hours each evening."
+  }
+}
