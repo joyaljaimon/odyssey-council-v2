@@ -1,0 +1,4 @@
+{
+  "_comment": "Order of Odysseus's voyage, for the dotted route on the stage map. Ids are in locations.json.",
+  "route": ["troy", "lotus-land", "cyclops-island", "aeolia", "ithaca", "aeolia", "aeaea", "underworld", "aeaea", "sirens-isle", "scylla-charybdis", "thrinacia", "ogygia", "scheria", "ithaca"]
+}
