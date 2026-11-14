@@ -2,14 +2,18 @@
 //   POST /text                      -> TextReply           (Channel, iMessage/SMS)
 //   WS   /voice?sessionId=...       <-> PCM audio          (Channel, FaceTime)
 //   WS   /stage?sessionId=...       -> StageEvent JSON     (Stage page)
+//   GET  /session?sessionId=...     -> SessionSummary      (Stage /card)
 //   POST /debug/emit?sessionId=...  -> forwards a StageEvent to the stage (testing only)
-// Everything below is a STUB that returns correctly shaped fake data.
+//   POST /debug/demo?sessionId=...  -> plays a scripted demo conversation on the stage (no Gemini needed)
+// Without GEMINI_API_KEY, /text runs a scripted offline Athena and /voice stays silent.
 import http from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { StageEvent, TextRequest } from "@odyssey/contracts";
 import { handleText } from "./text.ts";
 import { handleVoice } from "./voice.ts";
 import { emit, registerStage } from "./stage.ts";
+import { peekSession } from "./session.ts";
+import { playDemo } from "./demo.ts";
 
 const PORT = Number(process.env.BRAIN_PORT ?? 8080);
 
@@ -30,6 +34,18 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/debug/emit") {
       emit(url.searchParams.get("sessionId") ?? "demo", await readJson<StageEvent>(req));
       res.writeHead(204).end();
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/session") {
+      const id = url.searchParams.get("sessionId") ?? "demo";
+      const s = peekSession(id);
+      res.writeHead(s ? 200 : 404, { "content-type": "application/json", "access-control-allow-origin": "*" });
+      res.end(JSON.stringify(s?.summary ?? { error: "no such session" }));
+      return;
+    }
+    if (url.pathname === "/debug/demo") {
+      void playDemo(url.searchParams.get("sessionId") ?? "demo");
+      res.writeHead(202).end("demo started");
       return;
     }
     if (url.pathname === "/health") {
@@ -54,4 +70,6 @@ server.on("upgrade", (req, socket, head) => {
   });
 });
 
-server.listen(PORT, () => console.log(`brain listening on :${PORT}`));
+server.listen(PORT, () =>
+  console.log(`brain listening on :${PORT} (${process.env.GEMINI_API_KEY ? "Gemini" : "offline: no GEMINI_API_KEY"})`),
+);

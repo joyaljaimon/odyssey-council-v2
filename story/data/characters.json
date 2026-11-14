@@ -19,7 +19,7 @@
       "Courage rarely comes first. Usually it comes the moment after you act.",
       "Before we go on, tell me: what does home look like for you, your Ithaca?"
     ],
-    "voice": "TODO(brain)"
+    "voice": "Kore"
   },
   {
     "id": "odysseus",
@@ -41,7 +41,7 @@
       "I shouted my name at the Cyclops out of pride. That cost me ten years. Win quietly.",
       "When I washed up on Scheria I had nothing, not even clothes. I asked for help. It got me home."
     ],
-    "voice": "TODO(brain)"
+    "voice": "Charon"
   },
   {
     "id": "poseidon",
@@ -63,7 +63,7 @@
       "Every wave you curse is a lesson you have not yet learned.",
       "Very well, mortal. Make your case, and I will make mine."
     ],
-    "voice": "TODO(brain)"
+    "voice": "Fenrir"
   },
   {
     "id": "circe",
@@ -84,6 +84,6 @@
       "Temptation never looks like a trap from the inside. It looks like dinner.",
       "Plug your ears or tie yourself to the mast. Which kind of sailor are you?"
     ],
-    "voice": "TODO(brain)"
+    "voice": "Aoede"
   }
 ]

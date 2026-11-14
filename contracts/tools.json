@@ -1,48 +1,139 @@
 {
-  "_comment": "contract version: 1. Function declarations Brain registers with Gemini.",
+  "_comment": "contract version: 2. Function declarations Brain registers with Gemini.",
   "tools": [
     {
       "name": "search_odyssey",
       "description": "Search the Odyssey text and episode notes. Returns passages with ids like '12.14' (book.paragraph).",
-      "parameters": { "type": "object", "properties": { "query": { "type": "string" } }, "required": ["query"] }
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
     },
     {
       "name": "find_episode",
       "description": "Find the Odyssey episodes that best match a user's real-life problem.",
-      "parameters": { "type": "object", "properties": { "problem": { "type": "string" } }, "required": ["problem"] }
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "problem": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "problem"
+        ]
+      }
     },
     {
       "name": "highlight_passage",
       "description": "Highlight passages on the stage while you talk about them.",
       "parameters": {
         "type": "object",
-        "properties": { "passage_ids": { "type": "array", "items": { "type": "string" } } },
-        "required": ["passage_ids"]
+        "properties": {
+          "passage_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "passage_ids"
+        ]
       }
     },
     {
       "name": "show_scene",
       "description": "Show a scene image on the stage (or send it as an attachment in text mode).",
-      "parameters": { "type": "object", "properties": { "scene_id": { "type": "string" } }, "required": ["scene_id"] }
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "scene_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scene_id"
+        ]
+      }
     },
     {
       "name": "show_map",
       "description": "Show the journey map focused on a location.",
-      "parameters": { "type": "object", "properties": { "location_id": { "type": "string" } }, "required": ["location_id"] }
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id"
+        ]
+      }
     },
     {
       "name": "switch_character",
       "description": "Hand the conversation to another character.",
       "parameters": {
         "type": "object",
-        "properties": { "character": { "type": "string", "enum": ["athena", "odysseus", "poseidon", "circe"] } },
-        "required": ["character"]
+        "properties": {
+          "character": {
+            "type": "string",
+            "enum": [
+              "athena",
+              "odysseus",
+              "poseidon",
+              "circe"
+            ]
+          }
+        },
+        "required": [
+          "character"
+        ]
+      }
+    },
+    {
+      "name": "start_debate",
+      "description": "Stage a short debate between Odysseus (left) and Poseidon (right) about the user's dilemma, 2-3 turns each, then ask the user to pick a side.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The user's dilemma as a one-line question."
+          }
+        },
+        "required": [
+          "topic"
+        ]
       }
     },
     {
       "name": "end_session",
-      "description": "End the session with a short 'Your Ithaca' takeaway.",
-      "parameters": { "type": "object", "properties": { "takeaway": { "type": "string" } }, "required": ["takeaway"] }
+      "description": "End the session with a short 'Your Ithaca' takeaway: the lesson plus one action for this week, 2 sentences.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "takeaway": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "One concrete action for this week, starting with a verb."
+          }
+        },
+        "required": [
+          "takeaway"
+        ]
+      }
     }
   ]
 }

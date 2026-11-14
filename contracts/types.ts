@@ -1,4 +1,4 @@
-// contract version: 1
+// contract version: 2
 // Shared shapes between Channel, Brain, Story and Stage.
 // Announce any change in the team chat BEFORE merging, and bump the version above.
 
@@ -65,6 +65,18 @@ export type Character = {
   speechRules: string[];
   sampleLines: string[];
   voice: string; // Gemini Live prebuilt voice name, chosen by Brain
+};
+
+// ---- Session summary: GET {BRAIN_URL}/session?sessionId=... (v2, read by Stage for /card) ----
+export type SessionSummary = {
+  sessionId: string;
+  character: CharacterId;
+  problem?: string; // the user's problem in their words
+  episodeId?: string;
+  quote?: { passageId: string; text: string };
+  lesson?: string;
+  takeaway?: string; // the "Your Ithaca" line from end_session
+  ended: boolean;
 };
 
 // ---- Map locations (assets/map/locations.json) ----
