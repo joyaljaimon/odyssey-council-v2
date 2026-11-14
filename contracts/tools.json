@@ -1,5 +1,5 @@
 {
-  "_comment": "contract version: 2. Function declarations Brain registers with Gemini.",
+  "_comment": "contract version: 3. Function declarations Brain registers with Gemini.",
   "tools": [
     {
       "name": "search_odyssey",
@@ -132,6 +132,80 @@
         },
         "required": [
           "takeaway"
+        ]
+      }
+    },
+    {
+      "name": "find_moment",
+      "description": "Story Mode: find a story moment to narrate (e.g. 'the wooden horse', 'escaping the cyclops'). Returns its beats: illustration, gesture, passage ids and an exact quote for each.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "set_story_mode",
+      "description": "Turn Story Mode on (when the user asks you to tell or explain part of the story) or off (when the telling is done). Pass the moment_id from find_moment when turning it on.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "moment_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "active"
+        ]
+      }
+    },
+    {
+      "name": "show_illustration",
+      "description": "Story Mode: show a large illustration of an object or creature on the stage while you describe it (e.g. 'trojan-horse'). Use ids from find_moment beats.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "illustration_id": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "illustration_id"
+        ]
+      }
+    },
+    {
+      "name": "gesture",
+      "description": "Make a hand gesture on the stage while you speak: point (at the picture), open (explaining, palms up), raise (triumph or alarm), heart (feeling, sincerity), think (hand to chin), none (hands down).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "gesture": {
+            "type": "string",
+            "enum": [
+              "none",
+              "point",
+              "open",
+              "raise",
+              "heart",
+              "think"
+            ]
+          }
+        },
+        "required": [
+          "gesture"
         ]
       }
     }

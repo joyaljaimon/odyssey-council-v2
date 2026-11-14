@@ -1,0 +1,22 @@
+[
+  { "id": "trojan-horse", "title": "The Wooden Horse", "description": "The great wooden horse Epeus built, on wheels, with a hatch in its side" },
+  { "id": "troy-walls", "title": "The Walls of Troy", "description": "The towered walls and gate of Troy" },
+  { "id": "wooden-stake", "title": "The Olive Stake", "description": "The sharpened olive-wood stake, its point hardened in the fire" },
+  { "id": "cyclops-eye", "title": "The Cyclops' Eye", "description": "The single great eye of Polyphemus" },
+  { "id": "ram", "title": "The Ram", "description": "A great woolly ram, a man clinging beneath its belly" },
+  { "id": "wax-and-rope", "title": "Wax and Rope", "description": "A wheel of beeswax and coils of rope" },
+  { "id": "siren", "title": "A Siren", "description": "A Siren: a bird with a woman's head, singing" },
+  { "id": "bag-of-winds", "title": "The Bag of Winds", "description": "An ox-hide sack tied with silver thread, winds straining inside" },
+  { "id": "ship", "title": "Odysseus' Ship", "description": "A black Greek ship with a painted eye and one square sail" },
+  { "id": "magic-cup", "title": "Circe's Cup and Wand", "description": "A drinking cup with a drugged brew and a golden wand" },
+  { "id": "pig", "title": "A Pig", "description": "One of Odysseus' men turned into a pig" },
+  { "id": "raft", "title": "The Raft", "description": "The raft Odysseus built on Calypso's island" },
+  { "id": "great-wave", "title": "The Great Wave", "description": "A towering curling wave" },
+  { "id": "trident", "title": "Poseidon's Trident", "description": "The three-pronged trident of the sea god" },
+  { "id": "bow", "title": "The Great Bow", "description": "Odysseus' great recurved bow, strung, with an arrow" },
+  { "id": "twelve-axes", "title": "Twelve Axes", "description": "Twelve axe heads in a row, an arrow flying through their rings" },
+  { "id": "olive-bed", "title": "The Olive-Tree Bed", "description": "The bed built around the trunk of a living olive tree" },
+  { "id": "loom", "title": "Penelope's Loom", "description": "An upright loom with a half-woven web" },
+  { "id": "owl", "title": "Athena's Owl", "description": "The owl of Athena, wings spread" },
+  { "id": "ghost", "title": "A Ghost", "description": "A pale ghost among the dead" }
+]

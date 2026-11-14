@@ -40,7 +40,7 @@ export default function Home() {
           <li><b>Take home your Ithaca.</b> One lesson and one action for this week, on a card you can keep.</li>
         </ol>
         <p className="fine">The characters are AI and say so. Calls are not recorded. Quotes come from Samuel Butler&apos;s 1900 translation.</p>
-        <p><a href="/stage?sessionId=demo&debug=1">Open the stage (demo)</a> · <a href="/card?sessionId=example">Sample card</a></p>
+        <p><a href="/stage?sessionId=demo&debug=1">Open the stage (demo)</a> · <a href="/characters">Character styles</a> · <a href="/card?sessionId=example">Sample card</a></p>
       </section>
     </main>
   );

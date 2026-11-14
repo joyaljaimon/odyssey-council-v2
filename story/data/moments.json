@@ -1,0 +1,131 @@
+[
+  {
+    "id": "trojan-horse",
+    "title": "The Wooden Horse",
+    "tellers": ["odysseus", "athena", "poseidon"],
+    "keywords": ["trojan horse", "wooden horse", "horse", "troy", "epeus", "sack of troy", "inside the horse", "ambush", "trick"],
+    "summary": "Odysseus' plan that ended the Trojan War: a great wooden horse, built by Epeus with Athena's help, left as a gift with the bravest Greeks hidden inside. The Trojans dragged it into their city and argued over it; that night the Greeks climbed out and sacked Troy.",
+    "beats": [
+      { "illustrationId": "trojan-horse", "gesture": "open", "passageIds": ["8.45"], "caption": "Built by Epeus, with Athena's help", "quote": { "passageId": "8.45", "text": "tell us of the wooden horse which Epeus made with the assistance of Minerva" } },
+      { "illustrationId": "troy-walls", "gesture": "point", "passageIds": ["8.46"], "caption": "The Trojans drag it into their city", "quote": { "passageId": "8.46", "text": "the Trojans themselves had drawn the horse into their fortress" } },
+      { "illustrationId": "trojan-horse", "gesture": "heart", "passageIds": ["4.22"], "caption": "Hidden inside, waiting", "quote": { "passageId": "4.22", "text": "What endurance too, and what courage he displayed within the wooden horse" } },
+      { "illustrationId": "troy-walls", "gesture": "raise", "passageIds": ["8.46"], "caption": "Out of the horse, and Troy falls", "quote": { "passageId": "8.46", "text": "the sons of the Achaeans issued from the horse, and sacked the town" } }
+    ]
+  },
+  {
+    "id": "cyclops-escape",
+    "title": "Escaping the Cyclops",
+    "tellers": ["odysseus", "poseidon"],
+    "keywords": ["cyclops", "polyphemus", "noman", "nobody", "eye", "cave", "stake", "sheep", "ram", "escape"],
+    "summary": "Trapped in Polyphemus' cave, Odysseus sharpens an olive stake, tells the giant his name is Noman, blinds him, and escapes clinging under the rams.",
+    "beats": [
+      { "illustrationId": "wooden-stake", "gesture": "think", "passageIds": ["9.21"], "caption": "An olive stake, hardened in the fire", "quote": { "passageId": "9.21", "text": "I brought it to a point myself, charring the end in the fire to make it harder" } },
+      { "illustrationId": "cyclops-eye", "gesture": "point", "passageIds": ["9.24"], "caption": "\"My name is Noman\"", "quote": { "passageId": "9.24", "text": "my name is Noman" } },
+      { "illustrationId": "ram", "gesture": "open", "passageIds": ["9.32"], "caption": "Out under the rams' bellies", "quote": { "passageId": "9.32", "text": "the men were underneath their bellies" } },
+      { "illustrationId": "ship", "gesture": "raise", "passageIds": ["9.38"], "caption": "Pride: shouting his real name", "quote": { "passageId": "9.38", "text": "say it was the valiant warrior Ulysses, son of Laertes, who lives in Ithaca" } }
+    ]
+  },
+  {
+    "id": "sirens-song",
+    "title": "The Song of the Sirens",
+    "tellers": ["odysseus", "circe"],
+    "keywords": ["sirens", "siren", "song", "mast", "tied", "wax", "rope", "temptation"],
+    "summary": "Warned by Circe, Odysseus plugs his crew's ears with wax and has himself bound to the mast so he can hear the Sirens and live.",
+    "beats": [
+      { "illustrationId": "siren", "gesture": "point", "passageIds": ["12.5"], "caption": "A song no sailor survives", "quote": { "passageId": "12.5", "text": "they sit in a green field and warble him to death with the sweetness of their song" } },
+      { "illustrationId": "wax-and-rope", "gesture": "think", "passageIds": ["12.13"], "caption": "Wax for the crew, rope for Odysseus", "quote": { "passageId": "12.13", "text": "If I beg and pray you to set me free, then bind me more tightly still." } },
+      { "illustrationId": "ship", "gesture": "heart", "passageIds": ["12.16"], "caption": "Rowing on, out of hearing", "quote": { "passageId": "12.16", "text": "they quickened their stroke" } }
+    ]
+  },
+  {
+    "id": "circe-island",
+    "title": "Circe's Island",
+    "tellers": ["circe", "odysseus"],
+    "keywords": ["circe", "pigs", "swine", "wand", "cup", "potion", "aeaea", "hermes", "moly", "witch"],
+    "summary": "Circe drugs Odysseus' scouts and turns them into pigs; Odysseus resists her spell and she turns them back into men.",
+    "beats": [
+      { "illustrationId": "magic-cup", "gesture": "open", "passageIds": ["10.17"], "caption": "A drugged welcome", "quote": { "passageId": "10.17", "text": "she drugged it with wicked poisons to make them forget their homes" } },
+      { "illustrationId": "pig", "gesture": "point", "passageIds": ["10.17"], "caption": "A stroke of the wand", "quote": { "passageId": "10.17", "text": "she turned them into pigs by a stroke of her wand" } },
+      { "illustrationId": "magic-cup", "gesture": "raise", "passageIds": ["10.32"], "caption": "Men again", "quote": { "passageId": "10.32", "text": "they became men again, younger than they were before" } }
+    ]
+  },
+  {
+    "id": "bag-of-winds",
+    "title": "The Bag of Winds",
+    "tellers": ["odysseus", "poseidon"],
+    "keywords": ["aeolus", "winds", "bag", "sack", "storm", "so close", "asleep", "crew"],
+    "summary": "Aeolus ties every storm wind in a bag; within sight of Ithaca, Odysseus falls asleep and his crew open it.",
+    "beats": [
+      { "illustrationId": "bag-of-winds", "gesture": "open", "passageIds": ["10.2"], "caption": "Every wind tied in a sack", "quote": { "passageId": "10.2", "text": "he flayed me a prime ox-hide to hold the ways of the roaring winds" } },
+      { "illustrationId": "ship", "gesture": "think", "passageIds": ["10.3"], "caption": "Home in sight, and so tired", "quote": { "passageId": "10.3", "text": "I, being then dead beat, fell into a light sleep" } },
+      { "illustrationId": "great-wave", "gesture": "raise", "passageIds": ["10.4"], "caption": "The crew open the bag", "quote": { "passageId": "10.4", "text": "They loosed the sack, whereupon the wind flew howling forth" } }
+    ]
+  },
+  {
+    "id": "calypso-raft",
+    "title": "The Raft and the Storm",
+    "tellers": ["odysseus", "poseidon", "athena"],
+    "keywords": ["calypso", "raft", "storm", "wave", "shipwreck", "poseidon", "neptune", "ogygia"],
+    "summary": "Odysseus builds a raft to leave Calypso; Poseidon sees him and smashes it with a great wave.",
+    "beats": [
+      { "illustrationId": "raft", "gesture": "open", "passageIds": ["5.13"], "caption": "A raft, built by his own hands", "quote": { "passageId": "5.13", "text": "make yourself a large raft with an upper deck that it may carry you safely over the sea" } },
+      { "illustrationId": "trident", "gesture": "point", "passageIds": ["5.22"], "caption": "Poseidon sees him", "quote": { "passageId": "5.22", "text": "it made him very angry, so he wagged his head and muttered to himself" } },
+      { "illustrationId": "great-wave", "gesture": "raise", "passageIds": ["5.28"], "caption": "The great wave", "quote": { "passageId": "5.28", "text": "Neptune sent a terrible great wave that seemed to rear itself above his head" } }
+    ]
+  },
+  {
+    "id": "penelope-web",
+    "title": "Penelope's Web",
+    "tellers": ["athena", "odysseus"],
+    "keywords": ["penelope", "web", "loom", "weaving", "shroud", "suitors", "trick", "unpick"],
+    "summary": "Penelope holds off the suitors for three years by weaving a shroud by day and unpicking it by night.",
+    "beats": [
+      { "illustrationId": "loom", "gesture": "open", "passageIds": ["2.7"], "caption": "Weaving by day, unpicking by night", "quote": { "passageId": "2.7", "text": "we could see her working on her great web all day long, but at night she would unpick the stitches again by torchlight" } },
+      { "illustrationId": "loom", "gesture": "think", "passageIds": ["2.7"], "caption": "Three years of patience", "quote": { "passageId": "2.7", "text": "She fooled us in this way for three years and we never found her out" } }
+    ]
+  },
+  {
+    "id": "great-bow",
+    "title": "The Contest of the Bow",
+    "tellers": ["odysseus", "athena"],
+    "keywords": ["bow", "axes", "arrow", "contest", "suitors", "string", "archery", "penelope"],
+    "summary": "Penelope sets a contest: string Odysseus' bow and shoot through twelve axes. Every suitor fails; the beggar strings it with ease.",
+    "beats": [
+      { "illustrationId": "twelve-axes", "gesture": "point", "passageIds": ["21.3"], "caption": "Through twelve axes", "quote": { "passageId": "21.3", "text": "send his arrow through each one of twelve axes" } },
+      { "illustrationId": "bow", "gesture": "raise", "passageIds": ["21.39"], "caption": "Strung like a lyre", "quote": { "passageId": "21.39", "text": "strung it as easily as a skilled bard strings a new peg of his lyre" } }
+    ]
+  },
+  {
+    "id": "olive-bed",
+    "title": "The Olive-Tree Bed",
+    "tellers": ["odysseus", "athena"],
+    "keywords": ["bed", "olive", "penelope", "test", "secret", "reunion", "trust"],
+    "summary": "Penelope tests the stranger with the secret of their bed, built around a living olive tree.",
+    "beats": [
+      { "illustrationId": "olive-bed", "gesture": "heart", "passageIds": ["23.18"], "caption": "A bed no one can move", "quote": { "passageId": "23.18", "text": "There was a young olive growing within the precincts of the house" } },
+      { "illustrationId": "olive-bed", "gesture": "open", "passageIds": ["23.18"], "caption": "Built around a living tree", "quote": { "passageId": "23.18", "text": "I built my room round this with strong walls of stone" } }
+    ]
+  },
+  {
+    "id": "athena-disguise",
+    "title": "Athena in Disguise",
+    "tellers": ["athena"],
+    "keywords": ["athena", "minerva", "mentor", "disguise", "telemachus", "courage", "owl"],
+    "summary": "Athena takes the form of Mentor to guide Telemachus, and gives him courage.",
+    "beats": [
+      { "illustrationId": "owl", "gesture": "open", "passageIds": ["2.31"], "caption": "Athena becomes Mentor", "quote": { "passageId": "2.31", "text": "Then she took the form and voice of Mentor" } },
+      { "illustrationId": "owl", "gesture": "heart", "passageIds": ["1.22"], "caption": "Courage for Telemachus", "quote": { "passageId": "1.22", "text": "she had given Telemachus courage" } }
+    ]
+  },
+  {
+    "id": "underworld-ghosts",
+    "title": "Among the Dead",
+    "tellers": ["odysseus"],
+    "keywords": ["underworld", "hades", "dead", "ghost", "mother", "achilles", "teiresias", "grief"],
+    "summary": "In the land of the dead, Odysseus tries to embrace his mother's ghost, and Achilles tells him life is worth more than glory.",
+    "beats": [
+      { "illustrationId": "ghost", "gesture": "heart", "passageIds": ["11.15"], "caption": "His mother's ghost", "quote": { "passageId": "11.15", "text": "Thrice I sprang towards her and tried to clasp her in my arms" } },
+      { "illustrationId": "ghost", "gesture": "open", "passageIds": ["11.42"], "caption": "Achilles: better to be alive", "quote": { "passageId": "11.42", "text": "I would rather be a paid servant in a poor man’s house and be above ground than king of kings among the dead" } }
+    ]
+  }
+]

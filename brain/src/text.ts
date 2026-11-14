@@ -87,13 +87,9 @@ function ensureDisclosure(s: Session, who: CharacterId, text: string): string {
 
 // ---------------------------------------------------------------- Gemini
 
-async function geminiTurn(s: Session, message: string): Promise<TextReply> {
-  const reply: TextReply = { character: s.character, text: "", attachments: [], stageEvents: [], sessionEnded: false };
-  s.history.push({ role: "user", parts: [{ text: message }] });
-
-  let pendingSwitch: CharacterId | undefined;
-  let debateTopic: string | undefined;
-
+/** One character's turn: generate, run any tool calls, repeat until it answers in words. Returns its text. */
+async function toolLoop(s: Session, reply: TextReply, flags: { switchTo?: CharacterId; debateTopic?: string }): Promise<string> {
+  let said = "";
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const res = await generate({
       contents: s.history,
@@ -108,7 +104,7 @@ async function geminiTurn(s: Session, message: string): Promise<TextReply> {
 
     const calls = res.functionCalls ?? [];
     const text = (content.parts ?? []).map((p) => p.text ?? "").join("").trim();
-    if (text) reply.text = reply.text ? `${reply.text}\n\n${text}` : text;
+    if (text) said = said ? `${said}\n\n${text}` : text;
     if (!calls.length) break;
 
     const responses: Part[] = [];
@@ -116,33 +112,40 @@ async function geminiTurn(s: Session, message: string): Promise<TextReply> {
       const out = await runTool(s, call.name ?? "", (call.args ?? {}) as Record<string, unknown>);
       reply.stageEvents.push(...out.events);
       reply.attachments.push(...out.attachments);
-      if (out.switchTo) pendingSwitch = out.switchTo;
-      if (out.debateTopic) debateTopic = out.debateTopic;
+      if (out.switchTo) flags.switchTo = out.switchTo;
+      if (out.debateTopic) flags.debateTopic = out.debateTopic;
       if (out.ended) reply.sessionEnded = true;
       responses.push({ functionResponse: { id: call.id, name: call.name, response: out.response } });
     }
     s.history.push({ role: "user", parts: responses });
+    if (flags.switchTo && flags.switchTo !== s.character) break; // hand over now; the new character continues
   }
+  return said;
+}
 
-  if (debateTopic) {
-    const debate = await runTextDebate(s, debateTopic);
+async function geminiTurn(s: Session, message: string): Promise<TextReply> {
+  const reply: TextReply = { character: s.character, text: "", attachments: [], stageEvents: [], sessionEnded: false };
+  s.history.push({ role: "user", parts: [{ text: message }] });
+
+  const flags: { switchTo?: CharacterId; debateTopic?: string } = {};
+  reply.text = await toolLoop(s, reply, flags);
+
+  if (flags.debateTopic) {
+    const debate = await runTextDebate(s, flags.debateTopic);
     reply.text = [reply.text, debate.text].filter(Boolean).join("\n\n");
     reply.stageEvents.push(...debate.events);
     reply.character = "athena";
-  } else if (pendingSwitch && pendingSwitch !== s.character) {
-    reply.stageEvents.push({ type: "character", character: pendingSwitch });
-    s.character = pendingSwitch;
-    // The new character introduces itself in the same reply, with a recap instead of the old persona's history.
-    const intro = await generate({
-      contents: [{ role: "user", parts: [{ text: "(You have just been handed the conversation. Greet the user in one or two sentences and continue.)" }] }],
-      config: { systemInstruction: systemPrompt(pendingSwitch, "text", { firstTurn: false, summary: recap(s) }), temperature: 0.8 },
-    });
-    const introText = intro.text?.trim();
-    if (introText) {
-      reply.text = `${reply.text}\n\n${getCharacter(pendingSwitch)?.name}: ${introText}`.trim();
-      s.history.push({ role: "model", parts: [{ text: introText }] });
-    }
-    reply.character = pendingSwitch;
+  } else if (flags.switchTo && flags.switchTo !== s.character) {
+    // The new character takes over in the same reply, with its own prompt and the full tool loop (so it can start
+    // Story Mode, show scenes, etc. right away). One handover per message.
+    const from = getCharacter(s.character)?.name;
+    const to = flags.switchTo;
+    reply.stageEvents.push({ type: "character", character: to });
+    s.character = to;
+    s.history.push({ role: "user", parts: [{ text: `(${from} has just handed the conversation to you, ${getCharacter(to)?.name}. Introduce yourself in one short line, then answer the user's last request yourself, using your tools.)` }] });
+    const said = await toolLoop(s, reply, {});
+    if (said) reply.text = `${reply.text}\n\n${getCharacter(to)?.name}: ${said}`.trim();
+    reply.character = to;
   }
   if (!reply.text) reply.text = "Tell me more, traveler.";
   // The ending must state Your Ithaca in words, not only on the card.

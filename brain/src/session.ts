@@ -9,6 +9,7 @@ export type Session = {
   transcript: { who: CharacterId | "user"; text: string }[]; // both modes; used for handover summaries
   disclosed: boolean; // has the agent said it is an AI yet
   summary: SessionSummary;
+  story?: { momentId?: string }; // Story Mode on when set
   lastActive: number;
 };
 

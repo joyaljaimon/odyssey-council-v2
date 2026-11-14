@@ -1,4 +1,4 @@
-// contract version: 2
+// contract version: 3
 // Shared shapes between Channel, Brain, Story and Stage.
 // Announce any change in the team chat BEFORE merging, and bump the version above.
 
@@ -37,7 +37,16 @@ export type StageEvent =
   | { type: "scene"; sceneId: string } // e.g. "sirens"
   | { type: "map"; locationId: string } // e.g. "aeaea"
   | { type: "caption"; text: string }
-  | { type: "clear" };
+  | { type: "clear" }
+  // v3: Story Mode. A character narrates a moment in beats: an illustration, a hand gesture and a highlighted passage.
+  | { type: "story_mode"; active: boolean; title?: string }
+  | { type: "illustration"; illustrationId: string | null; caption?: string; animation?: IllustrationAnimation }
+  | { type: "gesture"; character: CharacterId; gesture: Gesture };
+
+// v3: gesture layers are assets/characters/<id>/gesture-<gesture>.png ("none" shows no arms).
+export const GESTURES = ["none", "point", "open", "raise", "heart", "think"] as const;
+export type Gesture = (typeof GESTURES)[number];
+export type IllustrationAnimation = "pop" | "zoom" | "slide" | "float";
 
 // ---- Story data files (story/data/*.json) ----
 export type Passage = { id: string; book: number; para: number; text: string };
@@ -77,6 +86,24 @@ export type SessionSummary = {
   lesson?: string;
   takeaway?: string; // the "Your Ithaca" line from end_session
   ended: boolean;
+};
+
+// v3: Story Mode content (story/data/illustrations.json, story/data/moments.json).
+export type Illustration = { id: string; title: string; description: string }; // image: assets/illustrations/<id>.png
+export type StoryBeat = {
+  illustrationId: string;
+  gesture: Gesture;
+  passageIds: string[];
+  caption: string;
+  quote: { passageId: string; text: string };
+};
+export type StoryMoment = {
+  id: string;
+  title: string;
+  tellers: CharacterId[]; // characters who can narrate it
+  keywords: string[];
+  summary: string;
+  beats: StoryBeat[];
 };
 
 // ---- Map locations (assets/map/locations.json) ----

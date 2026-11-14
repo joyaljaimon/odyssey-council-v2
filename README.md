@@ -41,6 +41,16 @@ curl -s "localhost:8080/debug/emit?sessionId=demo" -H 'content-type: application
   -d '{"type":"highlight","passageIds":["12.1"]}'
 ```
 
+## Character styles and Story Mode
+
+- **Character styles:** open `http://localhost:3000/characters` to compare five styles (red-figure, black-figure,
+  marble, Minoan fresco, storybook), talking and gesturing. Switch with
+  `npm run art -w stage -- --use <style> --only characters` (saved in `assets/characters/style.json`).
+- **Story Mode:** ask any character to tell part of the story ("Odysseus, what was it like inside the wooden horse?").
+  They narrate it in beats, each with a large illustration, a hand gesture and the passage highlighted. Moments live in
+  `story/data/moments.json`, illustrations in `assets/illustrations/`. Try it without Gemini:
+  `curl -X POST "localhost:8080/debug/demo?sessionId=demo&script=story"`.
+
 ## Daily git loop
 
 ```bash

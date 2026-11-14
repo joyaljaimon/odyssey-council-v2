@@ -4,7 +4,7 @@ import type { WebSocket } from "ws";
 import type { StageEvent } from "@odyssey/contracts";
 
 const stages = new Map<string, Set<WebSocket>>();
-type Snapshot = Partial<Record<"character" | "visual" | "highlight" | "caption", StageEvent>> & { debate?: StageEvent[] };
+type Snapshot = Partial<Record<"character" | "visual" | "highlight" | "caption" | "story" | "illustration" | "gesture", StageEvent>> & { debate?: StageEvent[] };
 const snapshots = new Map<string, Snapshot>();
 
 export function registerStage(sessionId: string, ws: WebSocket) {
@@ -14,7 +14,7 @@ export function registerStage(sessionId: string, ws: WebSocket) {
   ws.on("close", () => set.delete(ws));
   const snap = snapshots.get(sessionId);
   if (snap) {
-    for (const e of [...(snap.debate ?? []), snap.character, snap.visual, snap.highlight, snap.caption]) if (e) ws.send(JSON.stringify(e));
+    for (const e of [...(snap.debate ?? []), snap.character, snap.visual, snap.highlight, snap.caption, snap.story, snap.illustration, snap.gesture]) if (e) ws.send(JSON.stringify(e));
   }
 }
 
@@ -29,6 +29,9 @@ function remember(sessionId: string, e: StageEvent) {
     case "scene": case "map": snap.visual = e; break;
     case "highlight": snap.highlight = e; break;
     case "caption": snap.caption = e; break;
+    case "story_mode": snap.story = e; if (!e.active) { snap.illustration = undefined; snap.gesture = undefined; } break;
+    case "illustration": snap.illustration = e.illustrationId ? e : undefined; break;
+    case "gesture": snap.gesture = e.gesture === "none" ? undefined : e; break;
     case "clear": snapshots.set(sessionId, { character: snap.character }); return;
     default: return;
   }

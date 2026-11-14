@@ -3,6 +3,9 @@
 import type { Episode, Passage } from "@odyssey/contracts";
 import passagesJson from "../data/passages.json" with { type: "json" };
 import episodesJson from "../data/episodes.json" with { type: "json" };
+import momentsJson from "../data/moments.json" with { type: "json" };
+import illustrationsJson from "../data/illustrations.json" with { type: "json" };
+import type { StoryMoment, Illustration } from "@odyssey/contracts";
 
 const passages = new Map((passagesJson as Passage[]).map((p) => [p.id, p.text]));
 let errors = 0;
@@ -17,6 +20,17 @@ for (const e of episodesJson as Episode[]) {
     else if (!text.includes(q.text)) fail(`${e.id}: quote not found in ${q.passageId}: "${q.text.slice(0, 60)}…"`);
   }
 }
+const illustrationIds = new Set((illustrationsJson as Illustration[]).map((i) => i.id));
+let beats = 0;
+for (const m of momentsJson as StoryMoment[]) {
+  for (const b of m.beats) {
+    beats++;
+    if (!illustrationIds.has(b.illustrationId)) fail(`moment ${m.id}: unknown illustration ${b.illustrationId}`);
+    for (const id of b.passageIds) if (!passages.has(id)) fail(`moment ${m.id}: unknown passage ${id}`);
+    const text = passages.get(b.quote.passageId);
+    if (!text?.includes(b.quote.text)) fail(`moment ${m.id}: quote not found in ${b.quote.passageId}: "${b.quote.text.slice(0, 60)}…"`);
+  }
+}
 const n = (episodesJson as Episode[]).reduce((s, e) => s + e.keyQuotes.length, 0);
 if (errors) { console.error(`${errors} problem(s)`); process.exit(1); }
-console.log(`✓ ${n} quotes across ${episodesJson.length} episodes verified against passages.json`);
+console.log(`✓ ${n} episode quotes and ${beats} story-beat quotes verified against passages.json`);

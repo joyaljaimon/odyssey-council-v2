@@ -4,7 +4,7 @@
 // Layout keeps everything important 40 px inside the edges (FaceTime crops).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { CharacterId, MapLocation, Passage, StageEvent } from "@odyssey/contracts";
+import type { CharacterId, Gesture, IllustrationAnimation, MapLocation, Passage, StageEvent } from "@odyssey/contracts";
 import passagesJson from "@odyssey/story/data/passages.json";
 import bookTitlesJson from "@odyssey/story/data/book-titles.json";
 
@@ -25,6 +25,8 @@ const titleCase = (s: string) =>
   s.toLowerCase().replace(/(^|[\s—-])([a-z])/g, (_, a, b) => a + b.toUpperCase()).replace(/\b(Of|The|And|To|In|At|On|With|For|From)\b/g, (w, _1, i) => (i === 0 ? w : w.toLowerCase()));
 
 type Visual = { kind: "scene"; id: string } | { kind: "map"; id: string } | null;
+type Illustration = { id: string; caption?: string; animation: IllustrationAnimation; key: number };
+const GESTURE_LAYERS: Exclude<Gesture, "none">[] = ["point", "open", "raise", "heart", "think"];
 
 export default function Stage() {
   const params = useSearchParams();
@@ -39,6 +41,9 @@ export default function Stage() {
   const [visuals, setVisuals] = useState<{ v: Visual; key: number }[]>([]);
   const [caption, setCaption] = useState("");
   const [connected, setConnected] = useState(false);
+  const [story, setStory] = useState<{ active: boolean; title?: string }>({ active: false });
+  const [illustration, setIllustration] = useState<Illustration | null>(null);
+  const [gestures, setGestures] = useState<Partial<Record<CharacterId, Gesture>>>({});
   const keyRef = useRef(0);
   const speakerTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -69,7 +74,12 @@ export default function Stage() {
       case "scene": showVisual({ kind: "scene", id: e.sceneId }); break;
       case "map": showVisual({ kind: "map", id: e.locationId }); break;
       case "caption": setCaption(e.text); break;
-      case "clear": setHighlighted([]); setVisuals([]); setCaption(""); setDebate(null); break;
+      case "clear": setHighlighted([]); setVisuals([]); setCaption(""); setDebate(null); setStory({ active: false }); setIllustration(null); setGestures({}); break;
+      case "story_mode": setStory({ active: e.active, title: e.title }); if (!e.active) setIllustration(null); break;
+      case "illustration":
+        setIllustration(e.illustrationId ? { id: e.illustrationId, caption: e.caption, animation: e.animation ?? "pop", key: ++keyRef.current } : null);
+        break;
+      case "gesture": setGestures((g) => ({ ...g, [e.character]: e.gesture })); break;
     }
   }, []);
 
@@ -108,25 +118,34 @@ export default function Stage() {
 
         {inDebate ? (
           <>
-            <Figure id={debate!.left!} mouth={mouths[debate!.left!] ?? 0} className="debate-left" dim={speaker !== null && speaker !== debate!.left} side="left" />
-            <Figure id={debate!.right!} mouth={mouths[debate!.right!] ?? 0} className="debate-right" dim={speaker !== null && speaker !== debate!.right} side="right" />
+            <Figure id={debate!.left!} mouth={mouths[debate!.left!] ?? 0} gesture={gestures[debate!.left!]} className="debate-left" dim={speaker !== null && speaker !== debate!.left} side="left" />
+            <Figure id={debate!.right!} mouth={mouths[debate!.right!] ?? 0} gesture={gestures[debate!.right!]} className="debate-right" dim={speaker !== null && speaker !== debate!.right} side="right" />
           </>
         ) : (
-          <Figure id={character} mouth={mouths[character] ?? 0} className="solo" />
+          <Figure id={character} mouth={mouths[character] ?? 0} gesture={gestures[character]} className="solo" />
         )}
 
-        <div className={`visual ${inDebate ? "debate" : ""}`}>
-          {visuals.length === 0 && <TitleCard />}
+        <div className={`visual ${inDebate ? "debate" : ""} ${story.active ? "story" : ""}`}>
+          {visuals.length === 0 && !story.active && !illustration && <TitleCard />}
           {visuals.map(({ v, key }) => (
             <div key={key} className="layer fade-in">
               {v?.kind === "scene" && <img src={`/assets/scenes/${v.id}.png`} alt={v.id} />}
               {v?.kind === "map" && <JourneyMap locationId={v.id} />}
             </div>
           ))}
-          {current?.kind === "map" && <div className="tag">Map</div>}
+          {current?.kind === "map" && !story.active && <div className="tag">Map</div>}
+          {illustration && (
+            <div key={illustration.key} className={`illustration anim-${illustration.animation}`}>
+              <div className="plate">
+                <img src={`/assets/illustrations/${illustration.id}.png`} alt={illustration.caption ?? illustration.id} />
+              </div>
+              {illustration.caption && <div className="ill-caption">{illustration.caption}</div>}
+            </div>
+          )}
+          {story.active && <div className="story-banner fade-in">Story Mode{story.title ? ` · ${story.title}` : ""}</div>}
         </div>
 
-        <TextPanel highlighted={highlighted} compact={inDebate} />
+        <TextPanel highlighted={highlighted} compact={inDebate} story={story.active} />
 
         <div className={`caption ${inDebate ? "debate" : ""}`}>
           {caption && <span key={caption} className="fade-in">{caption}</span>}
@@ -141,7 +160,7 @@ export default function Stage() {
 
 // ---------------------------------------------------------------- character
 
-function Figure({ id, mouth, className, dim = false, side }: { id: CharacterId; mouth: number; className: string; dim?: boolean; side?: "left" | "right" }) {
+function Figure({ id, mouth, gesture = "none", className, dim = false, side }: { id: CharacterId; mouth: number; gesture?: Gesture; className: string; dim?: boolean; side?: "left" | "right" }) {
   const [blink, setBlink] = useState(false);
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
@@ -160,6 +179,9 @@ function Figure({ id, mouth, className, dim = false, side }: { id: CharacterId; 
           <img key={m} src={src(`mouth-${m}`)} alt="" style={{ opacity: m === mouth ? 1 : 0 }} />
         ))}
         <img src={src("blink")} alt="" style={{ opacity: blink ? 1 : 0 }} />
+        {GESTURE_LAYERS.map((g) => (
+          <img key={g} src={src(`gesture-${g}`)} alt="" className="gesture" style={{ opacity: g === gesture ? 1 : 0 }} />
+        ))}
       </div>
       <div className="nameplate">
         {side === "right" ? "" : "◆ "}{NAMES[id]}{side === "right" ? " ◆" : ""}
@@ -216,7 +238,7 @@ function JourneyMap({ locationId }: { locationId: string }) {
 
 // ---------------------------------------------------------------- text
 
-function TextPanel({ highlighted, compact }: { highlighted: string[]; compact: boolean }) {
+function TextPanel({ highlighted, compact, story = false }: { highlighted: string[]; compact: boolean; story?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const book = highlighted[0] ? Number(highlighted[0].split(".")[0]) : 1;
   const bookPassages = useMemo(() => passages.filter((p) => p.book === book), [book]);
@@ -226,7 +248,7 @@ function TextPanel({ highlighted, compact }: { highlighted: string[]; compact: b
     ref.current?.scrollTo({ top: el ? Math.max(0, el.offsetTop - 24) : 0, behavior: el ? "smooth" : "auto" });
   }, [highlighted, book]);
   return (
-    <div className={`text-panel ${compact ? "debate" : ""}`}>
+    <div className={`text-panel ${compact ? "debate" : ""} ${story ? "story" : ""}`}>
       <div className="book-title">
         <b>Book {ROMAN[book]}</b> · {titleCase(bookTitles[String(book)] ?? "")}
       </div>
@@ -274,6 +296,16 @@ function DebugPanel({ onEvent }: { onEvent: (e: StageEvent) => void }) {
       {btn("map ithaca", { type: "map", locationId: "ithaca" })}
       {btn("caption", { type: "caption", text: "Plan for temptation before it arrives, not in the moment." })}
       {btn("clear", { type: "clear" })}
+      <br />
+      <b>Story</b>{" "}
+      {btn("on", { type: "story_mode", active: true, title: "The Wooden Horse" })}
+      {btn("off", { type: "story_mode", active: false })}
+      {(["trojan-horse", "troy-walls", "cyclops-eye", "siren", "bag-of-winds", "great-wave", "bow", "owl"] as const).map((id, i) =>
+        btn(id, { type: "illustration", illustrationId: id, caption: id.replace(/-/g, " "), animation: (["pop", "zoom", "slide", "float"] as const)[i % 4] }))}
+      <br />
+      <b>Gesture</b>{" "}
+      {(["none", "point", "open", "raise", "heart", "think"] as const).map((g) =>
+        (["athena", "odysseus", "poseidon"] as const).map((c) => btn(`${c.slice(0, 3)} ${g}`, { type: "gesture", character: c, gesture: g })))}
     </div>
   );
 }
