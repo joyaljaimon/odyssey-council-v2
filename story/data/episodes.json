@@ -1,0 +1,36 @@
+[
+  {
+    "id": "sirens",
+    "title": "The Sirens",
+    "books": [12],
+    "passageIds": [],
+    "summary": "Warned by Circe, Odysseus plugs his crew's ears with wax and has himself tied to the mast so he can hear the Sirens' song without steering the ship onto their rocks.",
+    "characters": ["odysseus", "circe"],
+    "themes": ["temptation", "self-control", "planning ahead"],
+    "lessons": [
+      "Plan for temptation before it arrives, not in the moment.",
+      "Ask the people around you to hold you to your commitment."
+    ],
+    "problemTags": ["temptation", "distraction", "phone", "social media", "self-control", "addiction"],
+    "keyQuotes": [],
+    "sceneId": "sirens",
+    "locationId": "sirens-isle"
+  },
+  {
+    "id": "lotus-eaters",
+    "title": "The Lotus Eaters",
+    "books": [9],
+    "passageIds": [],
+    "summary": "Crew members who eat the lotus forget their wish to go home, and Odysseus has to drag them back to the ships.",
+    "characters": ["odysseus"],
+    "themes": ["forgetting your goal", "comfort", "procrastination"],
+    "lessons": [
+      "Comfort that makes you forget your goal is a trap.",
+      "Sometimes you need someone to pull you back to the ship."
+    ],
+    "problemTags": ["procrastination", "laziness", "scrolling", "motivation", "stuck", "comfort"],
+    "keyQuotes": [],
+    "sceneId": "lotus-eaters",
+    "locationId": "lotus-land"
+  }
+]

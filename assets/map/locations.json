@@ -1,0 +1,7 @@
+[
+  { "id": "troy", "name": "Troy", "x": 85, "y": 30 },
+  { "id": "lotus-land", "name": "Land of the Lotus Eaters", "x": 40, "y": 80 },
+  { "id": "aeaea", "name": "Aeaea (Circe's island)", "x": 20, "y": 40 },
+  { "id": "sirens-isle", "name": "Island of the Sirens", "x": 30, "y": 55 },
+  { "id": "ithaca", "name": "Ithaca", "x": 45, "y": 35 }
+]

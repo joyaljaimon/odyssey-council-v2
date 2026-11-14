@@ -1,0 +1,3 @@
+[
+  { "id": "12.1", "book": 12, "para": 1, "text": "PLACEHOLDER: run `npm run download -w story && npm run build:passages -w story` to replace this file with the real text." }
+]

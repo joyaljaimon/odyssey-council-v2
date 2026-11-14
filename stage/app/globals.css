@@ -1,0 +1,8 @@
+:root {
+  --ink: #1d1a16;
+  --paper: #f4ecdc;
+  --terracotta: #b5532b;
+  --gold: #e8c15a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: Georgia, serif; }
