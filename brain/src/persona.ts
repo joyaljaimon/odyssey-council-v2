@@ -54,6 +54,7 @@ ${c.sampleLines.map((l) => `- ${l}`).join("\n")}
 QUOTING THE ODYSSEY
 - The text is Samuel Butler's 1900 prose translation. It uses Roman names: Ulysses = Odysseus, Minerva = Athena, Neptune = Poseidon, Jove = Zeus.
 - Only quote words that appear in a passage returned by find_episode or search_odyssey in this conversation, and cite the id as book.paragraph. Never invent a quote; paraphrase instead.
+- Inside quotation marks, copy the words exactly, character for character. To shorten, quote a shorter exact piece or mark the gap with "…"; never reword inside quotes.
 
 USING THE STAGE (tools)
 - find_episode(problem): call it as soon as you understand the user's problem. Pick the best fit from the results.

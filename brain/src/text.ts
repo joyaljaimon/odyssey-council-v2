@@ -1,5 +1,5 @@
 // Text mode (iMessage / SMS). Gemini + tools when GEMINI_API_KEY is set; a scripted offline Athena otherwise.
-import { GoogleGenAI, type Content, type Part } from "@google/genai";
+import { GoogleGenAI, type Content, type GenerateContentParameters, type GenerateContentResponse, type Part } from "@google/genai";
 import type { Attachment, CharacterId, StageEvent, TextReply, TextRequest } from "@odyssey/contracts";
 import { findEpisode, getCharacter, getEpisode } from "@odyssey/story";
 import { systemPrompt } from "./persona.ts";
@@ -10,8 +10,42 @@ import { cardUrl, functionDeclarations, runTool, sceneUrl } from "./tools.ts";
 export const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL ?? "gemini-3.8-flash";
 const MAX_TOOL_ROUNDS = 6;
 
+// Tried in order when the main model is overloaded (503), rate limited (429) or too slow.
+const FALLBACK_MODELS = (process.env.GEMINI_TEXT_FALLBACKS ?? "gemini-3.5-flash-lite,gemini-3.5-flash").split(",").map((m) => m.trim()).filter(Boolean);
+const MODEL_TIMEOUT_MS = Number(process.env.GEMINI_TEXT_TIMEOUT_MS ?? 8000);
+const COOLDOWN_MS = 2 * 60 * 1000; // after a model fails, skip it for a while instead of waiting on it every round
+const downUntil = new Map<string, number>();
+
 let ai: GoogleGenAI | null = null;
 export const gemini = () => (process.env.GEMINI_API_KEY ? (ai ??= new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })) : null);
+
+const statusOf = (err: unknown) => (err as { status?: number }).status ?? 0;
+const retryable = (err: unknown) => [429, 500, 503, 504].includes(statusOf(err)) || (err as Error).name === "AbortError" || /abort|timed? ?out/i.test((err as Error).message ?? "");
+
+/** generateContent with a time limit per model, moving down the fallback list on overload. Throws only if all fail. */
+async function generate(params: Omit<GenerateContentParameters, "model">): Promise<GenerateContentResponse> {
+  let last: unknown;
+  const all = [TEXT_MODEL, ...FALLBACK_MODELS.filter((m) => m !== TEXT_MODEL)];
+  const up = all.filter((m) => (downUntil.get(m) ?? 0) < Date.now());
+  for (const model of up.length ? up : all) {
+    const t0 = Date.now();
+    try {
+      const res = await gemini()!.models.generateContent({
+        ...params,
+        model,
+        config: { ...params.config, abortSignal: AbortSignal.timeout(MODEL_TIMEOUT_MS) },
+      });
+      if (model !== TEXT_MODEL) console.warn(`[text] answered by fallback ${model} in ${Date.now() - t0} ms`);
+      return res;
+    } catch (err) {
+      last = err;
+      if (!retryable(err)) throw err;
+      downUntil.set(model, Date.now() + COOLDOWN_MS);
+      console.warn(`[text] ${model} unavailable (${statusOf(err) || "timeout"} after ${Date.now() - t0} ms), skipping it for 2 min`);
+    }
+  }
+  throw last;
+}
 
 export async function handleText(req: TextRequest): Promise<TextReply> {
   const s = getSession(req.sessionId);
@@ -21,7 +55,21 @@ export async function handleText(req: TextRequest): Promise<TextReply> {
     s.summary = { sessionId: s.id, character: "athena", ended: false };
   }
   s.transcript.push({ who: "user", text: req.message });
-  const reply = gemini() ? await geminiTurn(s, req.message) : offlineTurn(s, req.message);
+  let reply: TextReply;
+  if (gemini()) {
+    const before = { history: s.history.length, character: s.character };
+    try {
+      reply = await geminiTurn(s, req.message);
+    } catch (err) {
+      // Every Gemini model failed: undo the half-finished turn and answer with the scripted Athena instead of an error.
+      console.error("[text] Gemini failed, using offline reply:", (err as Error).message.slice(0, 200));
+      s.history.length = before.history;
+      s.character = before.character;
+      reply = offlineTurn(s, req.message);
+    }
+  } else {
+    reply = offlineTurn(s, req.message);
+  }
   reply.text = ensureDisclosure(s, reply.character, reply.text);
   s.transcript.push({ who: reply.character, text: reply.text });
   s.summary.character = reply.character;
@@ -47,8 +95,7 @@ async function geminiTurn(s: Session, message: string): Promise<TextReply> {
   let debateTopic: string | undefined;
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const res = await gemini()!.models.generateContent({
-      model: TEXT_MODEL,
+    const res = await generate({
       contents: s.history,
       config: {
         systemInstruction: systemPrompt(s.character, "text", { firstTurn: !s.disclosed }),
@@ -86,8 +133,7 @@ async function geminiTurn(s: Session, message: string): Promise<TextReply> {
     reply.stageEvents.push({ type: "character", character: pendingSwitch });
     s.character = pendingSwitch;
     // The new character introduces itself in the same reply, with a recap instead of the old persona's history.
-    const intro = await gemini()!.models.generateContent({
-      model: TEXT_MODEL,
+    const intro = await generate({
       contents: [{ role: "user", parts: [{ text: "(You have just been handed the conversation. Greet the user in one or two sentences and continue.)" }] }],
       config: { systemInstruction: systemPrompt(pendingSwitch, "text", { firstTurn: false, summary: recap(s) }), temperature: 0.8 },
     });
@@ -99,6 +145,9 @@ async function geminiTurn(s: Session, message: string): Promise<TextReply> {
     reply.character = pendingSwitch;
   }
   if (!reply.text) reply.text = "Tell me more, traveler.";
+  // The ending must state Your Ithaca in words, not only on the card.
+  const takeaway = s.summary.takeaway;
+  if (reply.sessionEnded && takeaway && !reply.text.includes(takeaway.slice(0, 40))) reply.text = `Your Ithaca: ${takeaway}\n\n${reply.text}`;
   return dedupe(reply);
 }
 
@@ -112,8 +161,7 @@ async function runTextDebate(s: Session, topic: string): Promise<{ text: string;
   ];
   for (const t of turns) {
     events.push({ type: "character", character: t.who, side: t.side });
-    const res = await gemini()!.models.generateContent({
-      model: TEXT_MODEL,
+    const res = await generate({
       contents: [{ role: "user", parts: [{ text: `Debate topic: ${topic}\n\nDebate so far:\n${lines.join("\n") || "(you open)"}\n\nGive your next argument in under 40 words. Answer your opponent directly. No quotes unless they appear above.` }] }],
       config: { systemInstruction: systemPrompt(t.who, "text", { firstTurn: false, summary: recap(s, 6) }), temperature: 0.9 },
     });
