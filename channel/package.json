@@ -6,8 +6,25 @@
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../.env src/server.ts",
     "capture": "tsx --env-file-if-exists=../.env src/stage-capture.ts",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "chert": "tsx --env-file-if-exists=../.env --env-file-if-exists=.env.local src/chert.ts start",
+    "facetime": "tsx --env-file-if-exists=../.env src/facetime.ts",
+    "chat": "tsx --env-file-if-exists=../.env src/chat.ts"
   },
-  "dependencies": { "@odyssey/contracts": "*", "playwright": "^1.48.0", "ws": "^8.18.0" },
-  "devDependencies": { "@types/node": "^22.0.0", "@types/ws": "^8.5.12", "tsx": "^4.19.0", "typescript": "^5.6.0" }
+  "dependencies": {
+    "@livekit/agents": "1.9.4",
+    "@livekit/rtc-node": "1.2.1",
+    "@odyssey/contracts": "*",
+    "@trychert/facetime-opensource": "0.1.2",
+    "jpeg-js": "0.4.4",
+    "livekit-server-sdk": "2.19.2",
+    "playwright": "^1.48.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
 }
