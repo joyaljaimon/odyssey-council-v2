@@ -55,3 +55,4 @@ git push --force-with-lease
 
 `contracts/types.ts` (API, socket and data shapes) and `contracts/tools.json` (Gemini tool declarations)
 are shared. Announce changes in the team chat and bump `contract version` before merging.
+
