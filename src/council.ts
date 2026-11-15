@@ -205,7 +205,7 @@ export class Council {
         const seats = newSeats ? [m.id] : this.stage.state.seats.includes(m.id) ? this.stage.state.seats : [...this.stage.state.seats, m.id];
         if (this.stage.state.phase !== "speaking") this.barge.arm();
         this.stage.set({ phase: "speaking", speaker: m.id, line: text, seats });
-        if (!cacheKey) { const v = this.visions.forLine(text); if (v) this.stage.showVision(v); } // a picture of what this line mentions
+        if (!cacheKey) { const v = this.visions.forLine(text); if (v) this.stage.showVision(v); else this.stage.clearVisions(); } // a picture of what this line mentions; it leaves with its line
       });
     };
     for await (const pcm of cachedSpeech(m, text, cacheKey, signal)) {

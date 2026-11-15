@@ -24,8 +24,8 @@ You call. You ask. The right members of the Council answer.
   the video shows their oil portrait lit up, mouth moving, with the line as a subtitle and the episode's painting
   behind.
 - **It shows you what they're talking about.** A library of 64 paintings (the wooden horse, the loom, Argos, the
-  bag of winds…) drifts onto the stage beside the speakers at the moment a line mentions it: it blooms from ink into
-  colour, pans slowly and fades when the next one arrives. Each showing is framed and cropped differently, nothing
+  bag of winds…) springs up in the middle of the stage the moment a line mentions it, the Council parting to either side;
+  it blooms from ink into colour, pans slowly, and leaves with its line as the Council closes ranks again. Each showing is framed and cropped differently, nothing
   repeats until ten others have been shown, and when the answer needs something the library lacks (Agamemnon in the
   net), a brand-new painting is made on the spot and joins the library.
 - **It knows the whole book.** The full Samuel Butler translation was distilled offline into a book-by-book codex

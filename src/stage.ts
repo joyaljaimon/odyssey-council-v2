@@ -92,12 +92,14 @@ function loadVision(v: Vision): Promise<VisionArt | null> {
 
 type Shape = "medallion" | "arch" | "card";
 type Show = {
-  v: Vision; art?: VisionArt; start: number; end?: number; side: -1 | 1; shape: Shape;
+  v: Vision; art?: VisionArt; start: number; end?: number; shape: Shape;
   z0: number; z1: number; f0: [number, number]; f1: [number, number]; flip: boolean; tilt: number; phase: number;
 };
 const ease = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
+const PIC = 236; // the picture's size in the middle of the stage
+const backOut = (x: number) => { x = clamp01(x); const c = 1.5; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
 
 // ---------------------------------------------------------------- drawing helpers
 
@@ -212,32 +214,43 @@ export class Stage {
   }
 
   private shows: Show[] = [];
-  private lastSide: -1 | 1 = -1;
   private lastShape: Shape = "card";
 
   set(patch: Partial<StageState>) { Object.assign(this.state, patch); }
 
   /**
-   * Bring a picture onto the stage beside the Council. Every showing is framed and moved a little differently
+   * Pop a picture up in the middle of the stage; the Council parts to either side of it. Every showing is framed and moved a little differently
    * (shape, crop, slow pan, mirror), so a picture seen twice doesn't look like the same slide.
    */
   showVision(v: Vision) {
     const now = Date.now();
     for (const s of this.shows) s.end ??= now;
-    // the side away from the camera panel, otherwise the other side from last time
-    const side: -1 | 1 = this.state.saw && this.state.sawFrame ? 1 : (this.lastSide === 1 ? -1 : 1);
     const shapes = (["medallion", "arch", "card"] as Shape[]).filter((x) => x !== this.lastShape);
     const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    this.lastSide = side; this.lastShape = shape;
+    this.lastShape = shape;
     const z0 = rand(1.0, 1.15), z1 = z0 + rand(0.1, 0.25) * (Math.random() < 0.3 ? -0.6 : 1);
     const show: Show = {
-      v, start: now, side, shape, z0, z1: Math.max(1, z1),
+      v, start: now, shape, z0, z1: Math.max(1, z1),
       f0: [rand(0.35, 0.65), rand(0.35, 0.6)], f1: [rand(0.35, 0.65), rand(0.35, 0.6)],
       flip: Math.random() < 0.35 && !v.fresh, tilt: rand(-0.05, 0.05), phase: rand(0, 6),
     };
     this.shows.push(show);
-    void loadVision(v).then((art) => { if (art) { show.art = art; show.start = Date.now(); } });
+    void loadVision(v).then((art) => { if (art) { show.art = art; show.start = Date.now() + 160; } }); // + 160: the Council starts to part first
     this.shows = this.shows.slice(-3);
+  }
+
+  /** 0 = Council in a row, 1 = parted around a picture; eased so the members glide aside and back. */
+  private splitP = 0;
+  private lastFrame = Date.now();
+  private splitAmount() {
+    const now = Date.now();
+    const dt = Math.min(0.2, (now - this.lastFrame) / 1000);
+    this.lastFrame = now;
+    const showing = this.shows.some((s) => s.art && !s.end);
+    this.splitP += ((showing ? 1 : 0) - this.splitP) * (1 - Math.exp(-dt * 7));
+    if (Math.abs((showing ? 1 : 0) - this.splitP) < 0.002) this.splitP = showing ? 1 : 0;
+    const x = this.splitP;
+    return x * x * (3 - 2 * x);
   }
 
   clearVisions() { const now = Date.now(); for (const s of this.shows) s.end ??= now; }
@@ -302,18 +315,35 @@ export class Stage {
     const idle = st.seats.length === 0;
     const seats = idle ? IDLE_COUNCIL : st.seats.slice(0, 6);
     const n = seats.length;
+    const top = 122;
+    // Row layout: the Council side by side in the middle.
     const cw = Math.min(n <= 3 ? 132 : 118, (w - 150) / n - 22);
-    const ch = cw * 1.28;
     const gap = n <= 3 ? 40 : 24;
     const rowW = n * cw + (n - 1) * gap;
-    const top = 122;
+    // Split layout: a picture in the middle, the Council parted to either side of it.
+    const split = idle ? 0 : this.splitAmount();
+    const left = Math.ceil(n / 2), right = n - left, most = Math.max(left, right);
+    const sGap = 22, inner = PIC / 2 + 26;
+    const regionW = w / 2 - inner - 24;
+    const sw = Math.min(n <= 2 ? 128 : 116, (regionW - (most - 1) * sGap) / most);
+    const place = (i: number) => {
+      const rowX = (w - rowW) / 2 + i * (cw + gap);
+      const onLeft = i < left;
+      const k = onLeft ? left : right, j = onLeft ? i : i - left;
+      const groupW = k * sw + (k - 1) * sGap;
+      // each group sits close to the picture, like people gathered round it
+      const x0 = onLeft ? w / 2 - inner - groupW : w / 2 + inner;
+      const splitX = x0 + j * (sw + sGap);
+      const sz = cw + (sw - cw) * split;
+      return { x: rowX + (splitX - rowX) * split, size: sz };
+    };
     // draw the speaker last so its glow sits on top
     const order = seats.map((id, i) => ({ id, i })).sort((a, b) => Number(a.id === st.speaker) - Number(b.id === st.speaker));
     for (const { id, i } of order) {
-      const x = (w - rowW) / 2 + i * (cw + gap);
-      this.seat(id, x, top, cw, ch, st.speaker === id && st.phase === "speaking", idle, st.mouth, t);
+      const { x, size } = place(i);
+      this.seat(id, x, top + (cw - size) * 0.35, size, size * 1.28, st.speaker === id && st.phase === "speaking", idle, st.mouth, t);
     }
-    if (!idle) this.visions((w - rowW) / 2, t);
+    if (!idle) this.visions(t);
 
     // the sea: what is being said, or what to do
     const subY = 432;
@@ -409,22 +439,23 @@ export class Stage {
     ctx.restore();
   }
 
-  /** Pictures beside the Council: they bloom from ink into colour, drift slowly, and fade when the next arrives. */
-  private visions(sideW: number, t: number) {
+  /** The picture in the middle: it springs up, blooms from ink into colour, drifts slowly, and fades when it's done. */
+  private visions(t: number) {
     const { ctx } = this;
     const now = Date.now();
     this.shows = this.shows.filter((s) => !s.end || now - s.end < 700);
-    const size = Math.max(136, Math.min(200, sideW - 48));
+    const size = PIC;
     for (const s of this.shows) {
       if (!s.art) continue;
       const age = now - s.start;
-      const enter = ease(age / 750);
+      const enter = ease(age / 600);
+      const pop = backOut(age / 650); // springs a little past full size, then settles
       const exit = s.end ? 1 - ease((now - s.end) / 650) : 1;
       if (exit <= 0) continue;
-      const cx = s.side < 0 ? sideW / 2 - 4 : 960 - sideW / 2 + 4;
-      const cy = 232 + Math.sin(t * 0.9 + s.phase) * 4 - (1 - exit) * 16 + (1 - enter) * 18;
-      const W = s.shape === "medallion" ? size : s.shape === "arch" ? size * 0.82 : size * 0.98;
-      const H = s.shape === "medallion" ? size : s.shape === "arch" ? size * 1.1 : size * 0.8;
+      const cx = 480;
+      const cy = 236 + Math.sin(t * 0.9 + s.phase) * 3 - (1 - exit) * 14;
+      const W = s.shape === "medallion" ? size * 0.96 : s.shape === "arch" ? size * 0.84 : size * 1.08;
+      const H = s.shape === "medallion" ? size * 0.96 : s.shape === "arch" ? size * 1.0 : size * 0.86;
       const path = () => {
         ctx.beginPath();
         if (s.shape === "medallion") ctx.arc(0, 0, W / 2, 0, Math.PI * 2);
@@ -435,7 +466,7 @@ export class Stage {
       ctx.globalAlpha = enter * exit;
       ctx.translate(cx, cy);
       ctx.rotate((s.shape === "card" ? s.tilt : s.tilt * 0.25) + Math.sin(t * 0.6 + s.phase) * 0.006);
-      const sc = 0.84 + 0.16 * enter;
+      const sc = (0.45 + 0.55 * pop) * (0.9 + 0.1 * exit);
       ctx.scale(sc, sc);
 
       // a soft warm light behind it while it arrives
