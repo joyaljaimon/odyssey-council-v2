@@ -32,6 +32,12 @@ class Call {
   private busy = false; // switching or debating: ignore caller audio
   private closed = false;
   private turnDone: (() => void) | null = null;
+  // Screens queued after a tool call (e.g. the next "Be Odysseus" decision). Kept apart from the speech-synced timers,
+  // which are cleared when the caller talks: these must never be dropped, only shown early.
+  private later: StageEvent[] = [];
+  private spokeSinceLater = false; // the turn-end rule only counts once the character has narrated the outcome
+  private spokenMsSinceLater = 0; // speech since the queued screen; at ~9 s (outcome + Homer told) the next one shows
+  private laterTimer: NodeJS.Timeout | null = null;
 
   constructor(private s: Session, private ws: WebSocket) {}
 
@@ -89,6 +95,7 @@ class Call {
     if (this.closed) return;
     this.closed = true;
     this.clearTimers();
+    if (this.laterTimer) clearTimeout(this.laterTimer);
     this.live?.close();
     this.stage({ type: "mouth", character: this.s.character, level: 0 });
     console.log(`[voice ${this.s.id}] call closed`);
@@ -140,6 +147,15 @@ class Call {
   }
 
   private playAudio(pcm: Buffer) {
+    this.spokeSinceLater = true;
+    if (this.later.length) {
+      const before = this.spokenMsSinceLater;
+      this.spokenMsSinceLater += pcm.length / BYTES_PER_MS;
+      // Once the outcome and Homer's choice have been told (~9 s of speech), move the screen on as she reaches the
+      // next scenario: show it at the moment that audio is heard.
+      const at = Number(process.env.ADVENTURE_NEXT_AFTER_MS ?? 9000);
+      if (before < at && this.spokenMsSinceLater >= at) this.queueLater([], Math.max(0, this.playhead - Date.now()) + (at - before));
+    }
     if (this.ws.readyState === this.ws.OPEN) this.ws.send(pcm, { binary: true });
     // Schedule one mouth event per 50 ms of audio, at the moment it will be heard.
     const now = Date.now();
@@ -154,6 +170,7 @@ class Call {
 
   private interrupt() {
     this.clearTimers();
+    this.flushLater(); // the caller is talking: show the queued screen now rather than lose it
     this.playhead = 0;
     this.send({ type: "interrupted" });
     this.stage({ type: "mouth", character: this.s.character, level: 0 });
@@ -162,6 +179,8 @@ class Call {
 
   private async onTurnComplete() {
     this.at(this.playhead, () => this.stage({ type: "mouth", character: this.s.character, level: 0 }));
+    // After the turn that narrated the outcome is heard (Gemini also ends a turn right at the tool call: ignore that one).
+    if (this.later.length && this.spokeSinceLater) this.queueLater([], Math.max(0, this.playhead - Date.now()) + 300);
     this.finishTurnText();
     this.turnDone?.();
     const after = this.after;
@@ -178,7 +197,10 @@ class Call {
   }
 
   private finishTurnText() {
-    if (this.userText.trim()) this.s.transcript.push({ who: "user", text: this.userText.trim() });
+    if (this.userText.trim()) {
+      this.s.transcript.push({ who: "user", text: this.userText.trim() });
+      console.log(`[voice ${this.s.id}] heard: "${this.userText.trim().slice(0, 120)}"`);
+    }
     if (this.turnText.trim()) this.s.transcript.push({ who: this.s.character, text: this.turnText.trim() });
     this.userText = "";
     this.turnText = "";
@@ -192,7 +214,7 @@ class Call {
       // Visuals land when the character reaches this point in its speech.
       for (const e of out.events) this.at(this.playhead, () => this.stage(e));
       // e.g. the next "Be Odysseus" decision: after the outcome and Homer's choice have been told (~12 s)
-      for (const e of out.later ?? []) this.at(Math.max(this.playhead, Date.now()) + 12000, () => this.stage(e));
+      if (out.later?.length) { this.spokeSinceLater = false; this.spokenMsSinceLater = 0; this.queueLater(out.later, 25000); }
       if (out.switchTo && out.switchTo !== this.s.character) this.after = { kind: "switch", to: out.switchTo };
       if (out.debateTopic) this.after = { kind: "debate", topic: out.debateTopic };
       if (out.ended) this.after = { kind: "end" };
@@ -262,6 +284,23 @@ class Call {
   private at(when: number, fn: () => void) {
     const t = setTimeout(() => { this.timers.delete(t); fn(); }, Math.max(0, when - Date.now()));
     this.timers.add(t);
+  }
+
+  /** Queue screens to show at most `ms` from now (sooner if the turn ends or the caller talks). */
+  private queueLater(events: StageEvent[], ms = 10000) {
+    this.later.push(...events);
+    const due = Date.now() + ms;
+    if (this.laterTimer && (this.laterTimer as unknown as { _due?: number })._due! <= due) return;
+    if (this.laterTimer) clearTimeout(this.laterTimer);
+    this.laterTimer = setTimeout(() => this.flushLater(), ms);
+    (this.laterTimer as unknown as { _due?: number })._due = due;
+  }
+
+  private flushLater() {
+    if (this.laterTimer) { clearTimeout(this.laterTimer); this.laterTimer = null; }
+    const events = this.later;
+    this.later = [];
+    for (const e of events) this.stage(e);
   }
 
   private clearTimers() {
