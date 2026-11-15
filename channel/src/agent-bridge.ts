@@ -11,7 +11,7 @@
 import WebSocket from "ws";
 import {
   AudioFrame, AudioSource, AudioStream, LocalAudioTrack, LocalVideoTrack, RoomEvent, TrackKind,
-  TrackPublishOptions, TrackSource, VideoBufferType, VideoFrame, VideoSource,
+  TrackPublishOptions, TrackSource, VideoBufferType, VideoCodec, VideoFrame, VideoSource,
   type RemoteParticipant, type RemoteTrack, type RemoteTrackPublication, type Room,
 } from "@livekit/rtc-node";
 import { AGENT_AUDIO_SAMPLE_RATE, USER_AUDIO_SAMPLE_RATE, type VoiceControlMessage } from "@odyssey/contracts";
@@ -62,10 +62,22 @@ export class AgentBridge {
       try {
         this.stage = await startStageVideo(this.sessionId);
         this.videoSource = new VideoSource(VIDEO_WIDTH, VIDEO_HEIGHT);
-        await me.publishTrack(LocalVideoTrack.createVideoTrack("agent-stage", this.videoSource), new TrackPublishOptions({ source: TrackSource.SOURCE_CAMERA }));
+        // One full-quality stream for one viewer (Chert's Mac): no simulcast, so it can't be switched to a small,
+        // low-frame-rate layer; enough bitrate for 960x540; H.264 so the Mac's hardware encoder does the work.
+        await me.publishTrack(
+          LocalVideoTrack.createVideoTrack("agent-stage", this.videoSource),
+          new TrackPublishOptions({
+            source: TrackSource.SOURCE_CAMERA,
+            simulcast: false,
+            videoCodec: process.env.STAGE_CODEC === "vp8" ? VideoCodec.VP8 : VideoCodec.H264,
+            videoEncoding: { maxBitrate: BigInt(Number(process.env.STAGE_BITRATE ?? 2_500_000)), maxFramerate: FPS },
+          }),
+        );
+        // Frames carry real timestamps so the encoder sees even pacing, not timer jitter.
+        const t0 = performance.now();
         this.videoTimer = setInterval(() => {
           const f = this.stage?.latest();
-          if (f) this.videoSource!.captureFrame(new VideoFrame(f.data, f.width, f.height, VideoBufferType.RGBA));
+          if (f) this.videoSource!.captureFrame(new VideoFrame(f.data, f.width, f.height, VideoBufferType.RGBA), BigInt(Math.round((performance.now() - t0) * 1000)));
         }, 1000 / FPS);
         console.log(`[bridge ${this.sessionId}] streaming ${stageUrl(this.sessionId)} as video at ${FPS} fps`);
       } catch (err) {
