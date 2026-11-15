@@ -159,7 +159,7 @@ class Call {
     if (!after) return;
     await this.waitForPlayback();
     if (after.kind === "switch") await this.switchTo(after.to);
-    else if (after.kind === "mode") await this.reopenForMode("(The mode just changed. Start it now, as your instructions for this mode say.)");
+    else if (after.kind === "mode") await this.reopenForMode("(You have just switched into this mode; it is already active, so do not call choose_mode. Start it now, as your instructions for this mode say.)");
     else if (after.kind === "debate") await this.debate(after.topic);
     else {
       this.send({ type: "ended" });
@@ -202,7 +202,13 @@ class Call {
   }
 
   /** A Live session's prompt and tools are fixed, so a new mode means a new session (same voice, with a recap). */
+  private reopens: number[] = [];
   async reopenForMode(prompt: string) {
+    // Circuit breaker: never restart the session in a loop (the caller would be ignored while it reopens).
+    const now = Date.now();
+    this.reopens = this.reopens.filter((t) => now - t < 20000);
+    if (this.reopens.length >= 3) { console.warn(`[voice ${this.s.id}] too many mode switches; staying in the current session`); return; }
+    this.reopens.push(now);
     this.busy = true;
     await this.open(this.s.character, { firstTurn: false, summary: recap(this.s) });
     this.busy = false;
@@ -211,6 +217,7 @@ class Call {
 
   /** The user tapped a mode card on the stage page. */
   async tappedMode(mode: AppMode | undefined) {
+    if (mode === this.s.mode) return;
     for (const e of modeEvents(this.s, mode)) this.stage(e);
     this.interrupt();
     await this.reopenForMode(mode ? `(The user just tapped "${MODE_NAMES[mode]}" on the screen. Start that mode now.)` : "(The user went back to the menu. Offer the three choices again.)");

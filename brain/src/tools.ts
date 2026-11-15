@@ -66,6 +66,11 @@ export async function runTool(s: Session, name: string, args: Record<string, unk
       const m = str("mode");
       const next = (APP_MODES as readonly string[]).includes(m) ? (m as AppMode) : undefined;
       if (m !== "menu" && !next) { out.response = { ok: false, error: "mode must be odysseus, philosophy, life or menu" }; break; }
+      if (next === s.mode) {
+        // Already there: never restart (on a call a restart reopens the Live session, which would loop).
+        out.response = { ok: true, mode: next ?? "menu", note: "You are already in this mode. Carry on with it; do not call choose_mode again." };
+        break;
+      }
       out.events.push(...modeEvents(s, next));
       out.modeChanged = true;
       out.response = { ok: true, mode: next ?? "menu", note: next ? `Now in ${next} mode: start it right away.` : "Back at the three choices: offer them again." };
