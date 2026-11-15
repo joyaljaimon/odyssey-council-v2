@@ -8,8 +8,8 @@ import { chromium } from "playwright";
 const STAGE_URL = process.env.STAGE_URL ?? "http://localhost:3000";
 // The stage is rendered at 0.75 scale (portrait 720x1280 -> 540x960 frames; landscape 1280x720 -> 960x540): about
 // half the pixels to paint, decode and send, at the same apparent size on a phone.
-// STAGE_ORIENTATION=portrait (default: fills an upright phone in FaceTime) or landscape.
-export const ORIENTATION = process.env.STAGE_ORIENTATION === "landscape" ? "landscape" : "portrait";
+// STAGE_ORIENTATION=landscape (default) or portrait (fills an upright phone in FaceTime).
+export const ORIENTATION = process.env.STAGE_ORIENTATION === "portrait" ? "portrait" : "landscape";
 const [LAYOUT_WIDTH, LAYOUT_HEIGHT] = ORIENTATION === "portrait" ? [720, 1280] : [1280, 720];
 const SCALE = Number(process.env.STAGE_SCALE ?? 0.75);
 export const VIDEO_WIDTH = Math.round(LAYOUT_WIDTH * SCALE);

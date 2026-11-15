@@ -142,15 +142,14 @@ export default function Stage() {
   }, [sessionId, apply]);
 
   // Fit the fixed 1280x720 stage to the window (it is exactly 1:1 in Channel's 1280x720 capture).
-  // Portrait (720x1280) or landscape (1280x720): ?orient=portrait|landscape, otherwise follow the window's shape
-  // (a phone held upright gets portrait, and it re-flows when you rotate).
+  // Landscape (1280x720) by default; ?orient=portrait gives the portrait layout (720x1280).
   const forced = params.get("orient");
   const [portrait, setPortrait] = useState(forced === "portrait");
   const [scale, setScale] = useState(1);
   const [offsetY, setOffsetY] = useState(0);
   useEffect(() => {
     const fit = () => {
-      const p = forced === "portrait" || (forced !== "landscape" && window.innerHeight > window.innerWidth);
+      const p = forced === "portrait"; // landscape unless ?orient=portrait
       setPortrait(p);
       const [w, h] = p ? [720, 1280] : [1280, 720];
       const sc = Math.min(window.innerWidth / w, window.innerHeight / h);
