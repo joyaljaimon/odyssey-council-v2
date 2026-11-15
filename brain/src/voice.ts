@@ -209,7 +209,7 @@ class Call {
     this.stage({ type: "character", character: to });
     await this.open(to, { firstTurn: false, summary: recap(this.s) });
     this.busy = false;
-    this.prompt("(You have just taken over the call. Greet the caller briefly by name and continue.)");
+    this.prompt("(You have just taken over the call from another character, because the caller asked for you. You are already active: do not call switch_character. Greet the caller in one short line by your name, then carry on with what they asked.)");
   }
 
   /** A Live session's prompt and tools are fixed, so a new mode means a new session (same voice, with a recap). */

@@ -9,12 +9,13 @@ import { choose, startAdventure } from "./adventure.ts";
 export const functionDeclarations = toolsJson.tools as unknown as FunctionDeclaration[];
 
 // Each mode only gets its own tools (the start menu only gets choose_mode), so the model stays on task.
+// switch_character is in every mode: the user can ask for any character at any time.
 const MODE_TOOLS: Record<AppMode | "menu", string[]> = {
-  menu: ["choose_mode"],
-  life: ["choose_mode", "find_episode", "search_odyssey", "highlight_passage", "show_scene", "show_map", "gesture", "end_session"],
+  menu: ["choose_mode", "switch_character"],
+  life: ["choose_mode", "switch_character", "find_episode", "search_odyssey", "highlight_passage", "show_scene", "show_map", "gesture", "end_session"],
   philosophy: ["choose_mode", "explain_idea", "find_moment", "set_story_mode", "show_illustration", "gesture", "highlight_passage",
     "search_odyssey", "find_episode", "show_scene", "show_map", "switch_character", "start_debate", "end_session"],
-  odysseus: ["choose_mode", "start_adventure", "choose", "end_adventure", "highlight_passage", "gesture", "end_session"],
+  odysseus: ["choose_mode", "switch_character", "start_adventure", "choose", "end_adventure", "highlight_passage", "gesture", "end_session"],
 };
 export const toolsFor = (mode: AppMode | undefined) =>
   functionDeclarations.filter((f) => MODE_TOOLS[mode ?? "menu"].includes(f.name ?? ""));
@@ -134,6 +135,7 @@ export async function runTool(s: Session, name: string, args: Record<string, unk
     case "switch_character": {
       const c = str("character") as CharacterId;
       if (!CHARACTERS.includes(c)) { out.response = { ok: false, error: "unknown character" }; break; }
+      if (c === s.character) { out.response = { ok: true, note: `You are already ${c}. Don't call switch_character; just answer the user.` }; break; }
       out.switchTo = c;
       out.response = { ok: true, note: `${c} takes over after your current sentence. Say a one-line goodbye.` };
       break;
