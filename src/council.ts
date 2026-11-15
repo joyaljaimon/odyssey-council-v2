@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { CHAIR, type Member } from "./roster.ts";
 import { SAY_AUDIO, TTS_RATE, speak } from "./gemini.ts";
+import { voiceTag } from "./elevenlabs.ts";
 import { FALLBACK_LINE, councilTurn, type Turn } from "./script.ts";
 import { Stage, imageFromJpeg, type StageState } from "./stage.ts";
 import { BargeIn, Vad } from "./vad.ts";
@@ -252,7 +253,7 @@ const audioDir = fileURLToPath(new URL("../assets/audio/", import.meta.url));
 
 /** Speech for a line; fixed lines (greeting, fallback) are saved to assets/audio/ and replayed instantly next time. */
 async function* cachedSpeech(m: Member, text: string, key: string | undefined, signal?: AbortSignal): AsyncGenerator<Buffer> {
-  const file = key ? `${audioDir}${key}.pcm` : null;
+  const file = key ? `${audioDir}${key}-${voiceTag(m)}.pcm` : null; // per voice: a greeting must match the chair's voice
   if (file && existsSync(file)) {
     const pcm = readFileSync(file);
     for (let off = 0; off < pcm.length; off += 9600) yield pcm.subarray(off, off + 9600);
@@ -270,7 +271,7 @@ async function* cachedSpeech(m: Member, text: string, key: string | undefined, s
 /** Record the fixed lines (greeting, fallback) ahead of the first call, so a call never waits on them. */
 export async function warmVoices() {
   for (const [key, m, text] of [["greeting", CHAIR, GREETING], ["fallback", FALLBACK_LINE.member, FALLBACK_LINE.text]] as const) {
-    if (existsSync(`${audioDir}${key}.pcm`)) continue;
+    if (existsSync(`${audioDir}${key}-${voiceTag(m)}.pcm`)) continue;
     try { for await (const _ of cachedSpeech(m, text, key)) { /* drain */ } console.log(`[council] recorded the ${key} line`); }
     catch (err) { console.warn(`[council] could not record the ${key} line yet:`, (err as Error).message); }
   }

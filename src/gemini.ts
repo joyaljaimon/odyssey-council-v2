@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import type { Member } from "./roster.ts";
+import { ELEVEN_KEY, ElevenError, elevenSpeak } from "./elevenlabs.ts";
 
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const list = (v: string | undefined, d: string) => (v || d).split(",").map((s) => s.trim()).filter(Boolean);
@@ -131,6 +132,20 @@ export async function* streamText(
 
 /** Speak a line in the member's voice. Yields PCM16 mono 24 kHz chunks as they are generated. */
 export async function* speak(text: string, m: Member, signal?: AbortSignal): AsyncGenerator<Buffer> {
+  // ElevenLabs first when a key is set; on any failure before audio starts, Gemini voices take over.
+  if (ELEVEN_KEY && elevenUpAt < Date.now()) {
+    let started = false;
+    try {
+      for await (const pcm of elevenSpeak(text, m, signal)) { started = true; yield pcm; }
+      if (started) return;
+    } catch (err) {
+      if (started || signal?.aborted) return;
+      const status = err instanceof ElevenError ? err.status : 0;
+      // out of credits / bad key: rest it 10 min; overload or timeout: 30 s
+      elevenUpAt = Date.now() + (status === 401 || status === 402 || status === 403 || /quota/i.test((err as Error).message) ? 600_000 : 30_000);
+      console.warn(`[tts] ElevenLabs unavailable for ${m.name} (${(err as Error).name === "AbortError" ? "timeout" : (err as Error).message.slice(0, 100)}); using Gemini voices`);
+    }
+  }
   const prompt = process.env.TTS_STYLE === "1" ? `Say it ${m.style}: ${text}` : text;
   for (const { key, model } of attempts(TTS_MODELS)) {
     if (signal?.aborted) return;
@@ -164,6 +179,7 @@ export async function* speak(text: string, m: Member, signal?: AbortSignal): Asy
   if (pcm) { SAY_AUDIO.add(pcm); yield pcm; }
 }
 
+let elevenUpAt = 0;
 const run = promisify(execFile);
 /** Audio that came from the Mac's `say` fallback (never cached as a permanent recording). */
 export const SAY_AUDIO = new WeakSet<Buffer>();
