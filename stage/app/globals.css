@@ -99,7 +99,7 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 .visual.story { height: 420px; }
 .text-panel.story { top: 478px; height: 148px; }
 .text-panel.story .passages p { font-size: 19px; }
-.visual.story .layer img { filter: brightness(.45) blur(1px); }
+.visual.story .layer::after { content: ""; position: absolute; inset: 0; background: rgba(12,8,6,.58); z-index: 1; } /* overlay, not a filter: cheap to paint */
 .story-banner { position: absolute; left: 16px; top: 14px; background: var(--gold); color: var(--glaze); font-size: 16px; font-weight: bold;
   letter-spacing: .14em; text-transform: uppercase; padding: 4px 14px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
 .illustration { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
@@ -177,7 +177,10 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 
 /* ------------------------------------------------ Be Odysseus */
 .adventure { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 14px 16px; gap: 10px; }
-.adv-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.35); }
+.adv-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.adv-bg { z-index: 0; }
+.adventure::before { content: ""; position: absolute; inset: 0; background: rgba(12,8,6,.66); z-index: 1; }
+.adventure > *:not(.adv-bg) { z-index: 2; }
 .adventure > *:not(.adv-bg) { position: relative; }
 .adv-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .adv-badge { background: var(--gold); color: var(--glaze); font-weight: bold; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; padding: 4px 12px; border-radius: 4px; }
@@ -245,3 +248,16 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 .stage.no-text .text-panel { opacity: 0; transform: translateY(30px); pointer-events: none; }
 .stage.no-text .visual, .stage.no-text .visual.story { height: 586px; }
 .stage.no-text .caption { top: 640px; }
+
+/* ------------------------------------------------ capture mode (?capture=1): the page Channel films as FaceTime video.
+   Headless Chromium paints in software, so anything that moves forever or needs filtering costs every frame. */
+.capture .sway { animation: fadeIn 300ms ease-out both; }
+.capture .anim-zoom .plate, .capture .anim-float .plate { animation: illPop 500ms ease-out both; }
+.capture .passages { mask-image: none; }
+.capture .figure.dim { filter: none; opacity: .4; }
+.capture .adv-choice.other { filter: none; opacity: .45; animation: none; }
+.capture .menu-card, .capture .viewpoint, .capture .adv-choice { box-shadow: none; }
+.capture .illustration .plate, .capture .board-art .plate { box-shadow: 0 0 0 4px var(--glaze); }
+.capture .map .pin i::after { animation: none; display: none; }
+.capture .stage, .capture .visual, .capture .text-panel, .capture .figure.solo { transition-duration: 250ms; }
+.visual .illustration, .visual .board, .visual .adventure, .visual .mode-intro, .visual .menu-screen, .visual .story-banner, .visual .tag { z-index: 2; }

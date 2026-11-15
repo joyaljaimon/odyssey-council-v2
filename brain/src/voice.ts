@@ -3,7 +3,7 @@
 //   Brain -> Channel: JSON { type: "interrupted" } (drop queued audio) and { type: "ended" } (hang up)
 // Mouth events are scheduled against a playback clock, so the stage mouth moves when the audio is heard,
 // not when it arrives (Gemini sends audio faster than real time).
-import { Modality, type LiveServerMessage, type Session as LiveSession } from "@google/genai";
+import { EndSensitivity, Modality, StartSensitivity, type LiveServerMessage, type Session as LiveSession } from "@google/genai";
 import type { WebSocket } from "ws";
 import {
   AGENT_AUDIO_SAMPLE_RATE, USER_AUDIO_SAMPLE_RATE,
@@ -59,12 +59,22 @@ class Call {
       model: LIVE_MODEL,
       config: {
         responseModalities: [Modality.AUDIO],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceFor(character) } } },
+        // English only: without a language code the native-audio model follows whatever language it thinks it hears.
+        speechConfig: { languageCode: "en-US", voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceFor(character) } } },
         systemInstruction: systemPrompt(character, "voice", { ...opts, appMode: this.s.mode }),
         tools: [{ functionDeclarations: toolsFor(this.s.mode) }],
         inputAudioTranscription: {},
         outputAudioTranscription: {},
         contextWindowCompression: { slidingWindow: {} },
+        // Latency: answer once the caller has been quiet for a short moment (the default waits noticeably longer).
+        realtimeInputConfig: {
+          automaticActivityDetection: {
+            startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+            endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
+            prefixPaddingMs: 100,
+            silenceDurationMs: Number(process.env.LIVE_SILENCE_MS ?? 450),
+          },
+        },
       },
       callbacks: {
         onmessage: (m) => void this.onMessage(m),

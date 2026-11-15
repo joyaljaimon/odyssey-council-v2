@@ -2,13 +2,29 @@
 // Role 4 (Experience). The 1280x720 stage Channel films into FaceTime.
 // Open http://localhost:3000/stage?sessionId=demo&debug=1 to fire events by hand.
 // Layout keeps everything important 40 px inside the edges (FaceTime crops).
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import type { AdventureView, AppMode, Board, CharacterId, GodId, Gesture, IllustrationAnimation, MapLocation, Passage, StageEvent } from "@odyssey/contracts";
-import passagesJson from "@odyssey/story/data/passages.json";
 import bookTitlesJson from "@odyssey/story/data/book-titles.json";
 
-const passages = passagesJson as Passage[];
+// Mouth levels live outside React state: 20 updates a second must only repaint the mouth, not the whole stage.
+const mouthStore = (() => {
+  const frames: Partial<Record<CharacterId, number>> = {};
+  const subs = new Set<() => void>();
+  return {
+    set(id: CharacterId, frame: number) { if (frames[id] !== frame) { frames[id] = frame; subs.forEach((f) => f()); } },
+    get: (id: CharacterId) => frames[id] ?? 0,
+    subscribe(f: () => void) { subs.add(f); return () => { subs.delete(f); }; },
+  };
+})();
+const useMouth = (id: CharacterId) => useSyncExternalStore(mouthStore.subscribe, () => mouthStore.get(id), () => 0);
+
+// Each book's passages are fetched once, when first highlighted (keeps the Odyssey text out of the page bundle).
+const bookCache = new Map<number, Promise<Passage[]>>();
+const loadBook = (book: number) => {
+  if (!bookCache.has(book)) bookCache.set(book, fetch(`/passages/${book}`).then((r) => r.json() as Promise<Passage[]>).catch(() => { bookCache.delete(book); return []; }));
+  return bookCache.get(book)!;
+};
 const bookTitles = bookTitlesJson as Record<string, string>;
 const BRAIN_WS = process.env.NEXT_PUBLIC_BRAIN_WS ?? "ws://localhost:8080";
 const BRAIN_HTTP = BRAIN_WS.replace(/^ws/, "http");
@@ -44,10 +60,10 @@ export default function Stage() {
   const params = useSearchParams();
   const sessionId = params.get("sessionId") ?? "demo";
   const debug = params.get("debug") === "1";
+  const capture = params.get("capture") === "1"; // filmed by Channel: drop effects that cost paint time
 
   const [character, setCharacter] = useState<CharacterId>("athena");
   const [debate, setDebate] = useState<{ left?: CharacterId; right?: CharacterId } | null>(null);
-  const [mouths, setMouths] = useState<Partial<Record<CharacterId, number>>>({});
   const [speaker, setSpeaker] = useState<CharacterId | null>(null);
   const [highlighted, setHighlighted] = useState<string[]>([]);
   const [visuals, setVisuals] = useState<{ v: Visual; key: number }[]>([]);
@@ -81,7 +97,7 @@ export default function Stage() {
         break;
       case "mouth": {
         const frame = mouthFrame(e.level);
-        setMouths((m) => (m[e.character] === frame ? m : { ...m, [e.character]: frame }));
+        mouthStore.set(e.character, frame);
         if (frame > 0) {
           setSpeaker(e.character);
           clearTimeout(speakerTimer.current);
@@ -134,18 +150,18 @@ export default function Stage() {
   const inDebate = !!debate && !!debate.left && !!debate.right;
 
   return (
-    <div className="stage-viewport">
+    <div className={`stage-viewport ${capture ? "capture" : ""}`}>
       <div className={`stage ${screen ? "screen-open" : "idle"} ${mode ? `mode-${mode}` : "menu"} ${highlighted.length ? "" : "no-text"}`} style={{ transform: `scale(${scale})` }}>
         <div className="meander top" />
         <div className="meander bottom" />
 
         {inDebate ? (
           <>
-            <Figure id={debate!.left!} mouth={mouths[debate!.left!] ?? 0} gesture={gestures[debate!.left!]} className="debate-left" dim={speaker !== null && speaker !== debate!.left} side="left" />
-            <Figure id={debate!.right!} mouth={mouths[debate!.right!] ?? 0} gesture={gestures[debate!.right!]} className="debate-right" dim={speaker !== null && speaker !== debate!.right} side="right" />
+            <Figure id={debate!.left!} gesture={gestures[debate!.left!]} className="debate-left" dim={speaker !== null && speaker !== debate!.left} side="left" />
+            <Figure id={debate!.right!} gesture={gestures[debate!.right!]} className="debate-right" dim={speaker !== null && speaker !== debate!.right} side="right" />
           </>
         ) : (
-          <Figure id={character} mouth={mouths[character] ?? 0} gesture={gestures[character]} className="solo" />
+          <Figure id={character} gesture={gestures[character]} className="solo" />
         )}
 
         <div className={`visual ${inDebate ? "debate" : ""} ${story.active || board || adv ? "story" : ""}`}>
@@ -192,7 +208,8 @@ export default function Stage() {
 
 // ---------------------------------------------------------------- character
 
-function Figure({ id, mouth, gesture = "none", className, dim = false, side }: { id: CharacterId; mouth: number; gesture?: Gesture; className: string; dim?: boolean; side?: "left" | "right" }) {
+const Figure = memo(function Figure({ id, gesture = "none", className, dim = false, side }: { id: CharacterId; gesture?: Gesture; className: string; dim?: boolean; side?: "left" | "right" }) {
+  const mouth = useMouth(id);
   const [blink, setBlink] = useState(false);
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
@@ -220,7 +237,7 @@ function Figure({ id, mouth, gesture = "none", className, dim = false, side }: {
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------- scene / map
 
@@ -241,7 +258,7 @@ const loadMap = () =>
     fetch("/assets/map/route.json").then((r) => r.json() as Promise<{ route: string[] }>),
   ]).then(([locations, { route }]) => ({ locations, route })));
 
-function JourneyMap({ locationId }: { locationId: string }) {
+const JourneyMap = memo(function JourneyMap({ locationId }: { locationId: string }) {
   const [data, setData] = useState<MapData | null>(null);
   useEffect(() => { loadMap().then(setData).catch(() => {}); }, []);
   const byId = useMemo(() => new Map(data?.locations.map((l) => [l.id, l]) ?? []), [data]);
@@ -266,14 +283,14 @@ function JourneyMap({ locationId }: { locationId: string }) {
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------- the start menu and the mode intros
 
 const tap = (sessionId: string, mode: AppMode | "menu") =>
   fetch(`${BRAIN_HTTP}/control?sessionId=${encodeURIComponent(sessionId)}&mode=${mode}`, { method: "POST" }).catch(() => {});
 
-function Menu({ sessionId }: { sessionId: string }) {
+const Menu = memo(function Menu({ sessionId }: { sessionId: string }) {
   return (
     <div className="menu-screen">
       <div className="menu-kicker">Where shall we sail?</div>
@@ -290,9 +307,9 @@ function Menu({ sessionId }: { sessionId: string }) {
       </div>
     </div>
   );
-}
+});
 
-function ModeIntro({ mode }: { mode: AppMode }) {
+const ModeIntro = memo(function ModeIntro({ mode }: { mode: AppMode }) {
   const m = MODES.find((x) => x.id === mode)!;
   return (
     <div className="mode-intro fade-in">
@@ -303,11 +320,11 @@ function ModeIntro({ mode }: { mode: AppMode }) {
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------- the Council: an idea from several gods' viewpoints
 
-function BoardView({ board, compact }: { board: Board; compact: boolean }) {
+const BoardView = memo(function BoardView({ board, compact }: { board: Board; compact: boolean }) {
   return (
     <div className={`board ${compact ? "compact" : ""}`}>
       <div className="board-art anim-pop">
@@ -330,7 +347,7 @@ function BoardView({ board, compact }: { board: Board; compact: boolean }) {
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------- Be Odysseus
 
@@ -344,7 +361,7 @@ function Meter({ label, value, max, kind }: { label: string; value: number; max:
   );
 }
 
-function AdventurePanel({ view }: { view: AdventureView }) {
+const AdventurePanel = memo(function AdventurePanel({ view }: { view: AdventureView }) {
   return (
     <div className="adventure">
       {view.sceneId && <img className="adv-bg" src={`/assets/scenes/${view.sceneId}.png`} alt="" />}
@@ -378,19 +395,20 @@ function AdventurePanel({ view }: { view: AdventureView }) {
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------- text
 
-function TextPanel({ highlighted, compact, story = false }: { highlighted: string[]; compact: boolean; story?: boolean }) {
+const TextPanel = memo(function TextPanel({ highlighted, compact, story = false }: { highlighted: string[]; compact: boolean; story?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const book = highlighted[0] ? Number(highlighted[0].split(".")[0]) : 1;
-  const bookPassages = useMemo(() => passages.filter((p) => p.book === book), [book]);
+  const [bookPassages, setBookPassages] = useState<Passage[]>([]);
+  useEffect(() => { let live = true; loadBook(book).then((p) => { if (live) setBookPassages(p); }); return () => { live = false; }; }, [book]);
   useEffect(() => {
     // Scroll so the highlight's first line sits near the top (long passages would otherwise start off-screen).
     const el = highlighted[0] ? ref.current?.querySelector<HTMLElement>(`[data-pid="${highlighted[0]}"]`) : null;
-    ref.current?.scrollTo({ top: el ? Math.max(0, el.offsetTop - 24) : 0, behavior: el ? "smooth" : "auto" });
-  }, [highlighted, book]);
+    ref.current?.scrollTo({ top: el ? Math.max(0, el.offsetTop - 24) : 0, behavior: el && !document.querySelector(".capture") ? "smooth" : "auto" });
+  }, [highlighted, book, bookPassages]);
   return (
     <div className={`text-panel ${compact ? "debate" : ""} ${story ? "story" : ""}`}>
       <div className="book-title">
@@ -406,7 +424,7 @@ function TextPanel({ highlighted, compact, story = false }: { highlighted: strin
       <div className="translator">Samuel Butler&apos;s translation, 1900</div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------- debug
 

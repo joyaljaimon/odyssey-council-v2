@@ -1,11 +1,18 @@
 {
   "name": "homers-odyssey",
   "private": true,
-  "workspaces": ["contracts", "story", "brain", "channel", "stage"],
+  "workspaces": [
+    "contracts",
+    "story",
+    "brain",
+    "channel",
+    "stage"
+  ],
   "scripts": {
     "dev:brain": "npm run dev -w brain",
     "dev:channel": "npm run dev -w channel",
     "dev:stage": "npm run dev -w stage",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "serve:stage": "npm run serve -w stage"
   }
 }

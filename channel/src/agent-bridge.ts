@@ -18,7 +18,7 @@ import { AGENT_AUDIO_SAMPLE_RATE, USER_AUDIO_SAMPLE_RATE, type VoiceControlMessa
 import { VIDEO_HEIGHT, VIDEO_WIDTH, stageUrl, startStageVideo } from "./stage-capture.ts";
 
 const BRAIN_URL = process.env.BRAIN_URL ?? "http://localhost:8080";
-const FPS = Number(process.env.STAGE_FPS ?? 15);
+const FPS = Number(process.env.STAGE_FPS ?? 20);
 const FRAME_MS = 20;
 
 export type BridgeOptions = {
