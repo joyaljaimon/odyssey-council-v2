@@ -2,6 +2,7 @@
 // The latest visual state is replayed to pages that connect late (e.g. Channel's headless capture).
 import type { WebSocket } from "ws";
 import type { StageEvent } from "@odyssey/contracts";
+import { currentStyle } from "./style.ts";
 
 const stages = new Map<string, Set<WebSocket>>();
 type Snapshot = Partial<Record<"character" | "visual" | "highlight" | "caption" | "story" | "illustration" | "gesture" | "screen" | "board" | "adventure", StageEvent>> & { debate?: StageEvent[] };
@@ -12,6 +13,7 @@ export function registerStage(sessionId: string, ws: WebSocket) {
   set.add(ws);
   stages.set(sessionId, set);
   ws.on("close", () => set.delete(ws));
+  ws.send(JSON.stringify({ type: "style", style: currentStyle() } satisfies StageEvent));
   const snap = snapshots.get(sessionId);
   if (snap) {
     for (const e of [...(snap.debate ?? []), snap.character, snap.visual, snap.highlight, snap.caption, snap.story, snap.illustration, snap.gesture, snap.screen, snap.board, snap.adventure]) if (e) ws.send(JSON.stringify(e));
@@ -45,6 +47,12 @@ export function emit(sessionId: string, event: StageEvent) {
   remember(sessionId, event);
   const msg = JSON.stringify(event);
   for (const ws of stages.get(sessionId) ?? []) if (ws.readyState === ws.OPEN) ws.send(msg);
+}
+
+/** Sends an event to every open stage page, whatever its session (e.g. a style change). */
+export function broadcast(event: StageEvent) {
+  const msg = JSON.stringify(event);
+  for (const set of stages.values()) for (const ws of set) if (ws.readyState === ws.OPEN) ws.send(msg);
 }
 
 // Loudness of a PCM16 chunk scaled to 0..1, for `mouth` events. Gemini speech peaks around RMS 0.15-0.25,

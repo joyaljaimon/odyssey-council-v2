@@ -19,6 +19,38 @@ const mouthStore = (() => {
 })();
 const useMouth = (id: CharacterId) => useSyncExternalStore(mouthStore.subscribe, () => mouthStore.get(id), () => 0);
 
+// The art style (contract v6): "vector" = the original drawn art in /assets; AI styles live in assets/styles/<style>/
+// and are served by /style-assets. Anything a style lacks falls back to the original art.
+type StyleManifest = { characters: string[]; scenes: string[]; illustrations: string[]; mouth?: Record<string, { x: number; y: number }> };
+const styleStore = (() => {
+  let state: { style: string; manifest: StyleManifest | null } = { style: "vector", manifest: null };
+  const subs = new Set<() => void>();
+  const set = (next: typeof state) => { state = next; subs.forEach((f) => f()); };
+  return {
+    get: () => state,
+    subscribe(f: () => void) { subs.add(f); return () => { subs.delete(f); }; },
+    async use(style: string) {
+      if (style === state.style) return;
+      if (style === "vector") return set({ style, manifest: null });
+      try {
+        const manifest = (await fetch(`/style-assets/${style}/manifest.json`, { cache: "no-store" }).then((r) => r.json())) as StyleManifest;
+        set({ style, manifest });
+      } catch { set({ style: "vector", manifest: null }); }
+    },
+  };
+})();
+const useStyle = () => useSyncExternalStore(styleStore.subscribe, styleStore.get, styleStore.get);
+type ArtKind = "scenes" | "illustrations" | "characters";
+const vectorUrl = (kind: ArtKind, id: string) => `/assets/${kind}/${id}.png`;
+function artUrl(st: ReturnType<typeof styleStore.get>, kind: ArtKind, id: string) {
+  return st.manifest?.[kind]?.includes(id) ? `/style-assets/${st.style}/${kind}/${id}.jpg` : vectorUrl(kind, id);
+}
+/** An image in the current art style, falling back to the original art if the style lacks it. */
+function Art({ kind, id, className, alt = "" }: { kind: ArtKind; id: string; className?: string; alt?: string }) {
+  const st = useStyle();
+  return <img className={className} src={artUrl(st, kind, id)} alt={alt} onError={(e) => { const v = vectorUrl(kind, id); if (!e.currentTarget.src.endsWith(v)) e.currentTarget.src = v; }} />;
+}
+
 // Each book's passages are fetched once, when first highlighted (keeps the Odyssey text out of the page bundle).
 const bookCache = new Map<number, Promise<Passage[]>>();
 const loadBook = (book: number) => {
@@ -61,6 +93,7 @@ export default function Stage() {
   const sessionId = params.get("sessionId") ?? "demo";
   const debug = params.get("debug") === "1";
   const capture = params.get("capture") === "1"; // filmed by Channel: drop effects that cost paint time
+  const artStyle = useStyle();
 
   const [character, setCharacter] = useState<CharacterId>("athena");
   const [debate, setDebate] = useState<{ left?: CharacterId; right?: CharacterId } | null>(null);
@@ -116,6 +149,7 @@ export default function Stage() {
       case "clear": setHighlighted([]); setVisuals([]); setCaption(""); setDebate(null); setStory({ active: false }); setIllustration(null); setGestures({}); setScreen(true); setBoard(null); setAdv(null); setMode(null); break;
       case "mode": setMode(e.mode); setVisuals([]); setHighlighted([]); setBoard(null); setAdv(null); setIllustration(null); setStory({ active: false }); setScreen(true); break;
       case "screen": setScreen(e.open); break;
+      case "style": void styleStore.use(e.style); break;
       case "board": setBoard(e.board ? { ...e.board, key: ++keyRef.current } : null); if (e.board) setAdv(null); break;
       case "adventure": setAdv(e.adventure); if (e.adventure) setBoard(null); break;
       case "story_mode": setStory({ active: e.active, title: e.title }); if (!e.active) setIllustration(null); break;
@@ -165,7 +199,7 @@ export default function Stage() {
   const inDebate = !!debate && !!debate.left && !!debate.right;
 
   return (
-    <div className={`stage-viewport ${capture ? "capture" : ""} ${portrait ? "portrait" : "landscape"}`}>
+    <div className={`stage-viewport ${capture ? "capture" : ""} ${portrait ? "portrait" : "landscape"} style-${artStyle.style}`}>
       <div className={`stage ${screen ? "screen-open" : "idle"} ${mode ? `mode-${mode}` : "menu"} ${highlighted.length ? "" : "no-text"}`} style={{ transform: `translateY(${offsetY}px) scale(${scale})` }}>
         <div className="meander top" />
         <div className="meander bottom" />
@@ -184,7 +218,7 @@ export default function Stage() {
           {mode && visuals.length === 0 && !story.active && !illustration && !board && !adv && <ModeIntro mode={mode} />}
           {visuals.map(({ v, key }) => (
             <div key={key} className="layer fade-in">
-              {v?.kind === "scene" && <img src={`/assets/scenes/${v.id}.png`} alt={v.id} />}
+              {v?.kind === "scene" && <Art kind="scenes" id={v.id} alt={v.id} />}
               {v?.kind === "map" && <JourneyMap locationId={v.id} />}
             </div>
           ))}
@@ -192,7 +226,7 @@ export default function Stage() {
           {illustration && (
             <div key={illustration.key} className={`illustration anim-${illustration.animation}`}>
               <div className="plate">
-                <img src={`/assets/illustrations/${illustration.id}.png`} alt={illustration.caption ?? illustration.id} />
+                <Art kind="illustrations" id={illustration.id} alt={illustration.caption ?? illustration.id} />
               </div>
               {illustration.caption && <div className="ill-caption">{illustration.caption}</div>}
             </div>
@@ -225,6 +259,7 @@ export default function Stage() {
 
 const Figure = memo(function Figure({ id, gesture = "none", className, dim = false, side }: { id: CharacterId; gesture?: Gesture; className: string; dim?: boolean; side?: "left" | "right" }) {
   const mouth = useMouth(id);
+  const st = useStyle();
   const [blink, setBlink] = useState(false);
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
@@ -234,6 +269,8 @@ const Figure = memo(function Figure({ id, gesture = "none", className, dim = fal
     loop();
     return () => clearTimeout(t);
   }, []);
+  // After all hooks (hook order must not depend on the style).
+  if (st.manifest?.characters.includes(id)) return <PaintedFigure id={id} mouth={mouth} className={className} dim={dim} side={side} style={st} />;
   const src = (f: string) => `/assets/characters/${id}/${f}.png`;
   return (
     <div className={`figure ${className} ${dim ? "dim" : ""}`}>
@@ -253,6 +290,29 @@ const Figure = memo(function Figure({ id, gesture = "none", className, dim = fal
     </div>
   );
 });
+
+/** An AI-style portrait in an arched frame. Talking: the "speaking" version fades in over the mouth with loudness. */
+function PaintedFigure({ id, mouth, className, dim, side, style }: { id: CharacterId; mouth: number; className: string; dim: boolean; side?: "left" | "right"; style: ReturnType<typeof styleStore.get> }) {
+  const base = `/style-assets/${style.style}/characters/${id}`;
+  const canSpeak = style.manifest?.characters.includes(`${id}-speak`);
+  const m = style.manifest?.mouth?.[id] ?? { x: 50, y: 60 };
+  const mask = `radial-gradient(ellipse 22% 13% at ${m.x}% ${m.y}%, #000 55%, transparent 100%)`;
+  return (
+    <div className={`figure painted ${className} ${dim ? "dim" : ""}`}>
+      <div key={`${style.style}-${id}`} className="figure-art fade-in">
+        <div className="portrait-frame">
+          <img src={`${base}.jpg`} alt={NAMES[id]} />
+          {canSpeak && (
+            <img src={`${base}-speak.jpg`} alt="" className="speak" style={{ opacity: [0, 0.55, 0.85, 1][mouth], WebkitMaskImage: mask, maskImage: mask }} />
+          )}
+        </div>
+      </div>
+      <div className="nameplate">
+        {side === "right" ? "" : "◆ "}{NAMES[id]}{side === "right" ? " ◆" : ""}
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------- scene / map
 
@@ -313,7 +373,7 @@ const Menu = memo(function Menu({ sessionId }: { sessionId: string }) {
         {MODES.map((m, i) => (
           <button key={m.id} className="menu-card" style={{ animationDelay: `${i * 140}ms` }} onClick={() => tap(sessionId, m.id)}>
             <span className="menu-num">{i + 1}</span>
-            <span className="menu-plate"><img src={`/assets/illustrations/${m.emblem}.png`} alt="" /></span>
+            <span className="menu-plate"><Art kind="illustrations" id={m.emblem} /></span>
             <span className="menu-title">{m.title}</span>
             <span className="menu-blurb">{m.blurb}</span>
             <span className="menu-say">Say &ldquo;{m.say}&rdquo;</span>
@@ -328,7 +388,7 @@ const ModeIntro = memo(function ModeIntro({ mode }: { mode: AppMode }) {
   const m = MODES.find((x) => x.id === mode)!;
   return (
     <div className="mode-intro fade-in">
-      <span className="menu-plate big"><img src={`/assets/illustrations/${m.emblem}.png`} alt="" /></span>
+      <span className="menu-plate big"><Art kind="illustrations" id={m.emblem} /></span>
       <div>
         <div className="menu-kicker">{m.title}</div>
         <div className="mode-intro-lines">{m.examples.map((e) => <div key={e}>{e}</div>)}</div>
@@ -344,7 +404,7 @@ const BoardView = memo(function BoardView({ board, compact }: { board: Board; co
     <div className={`board ${compact ? "compact" : ""}`}>
       <div className="board-art anim-pop">
         <div className="plate">
-          <img src={`/assets/illustrations/${board.illustrationId ?? GOD_EMBLEM[board.viewpoints[0]?.god ?? "athena"]}.png`} alt="" />
+          <Art kind="illustrations" id={board.illustrationId ?? GOD_EMBLEM[board.viewpoints[0]?.god ?? "athena"]} />
         </div>
       </div>
       <div className="board-body">
@@ -354,7 +414,7 @@ const BoardView = memo(function BoardView({ board, compact }: { board: Board; co
         <div className="viewpoints">
           {board.viewpoints.map((v, i) => (
             <div key={v.god + i} className="viewpoint" style={{ animationDelay: `${300 + i * 450}ms` }}>
-              <img src={`/assets/illustrations/${GOD_EMBLEM[v.god]}.png`} alt="" />
+              <Art kind="illustrations" id={GOD_EMBLEM[v.god]} />
               <div><b>{GOD_NAME[v.god]}</b> {v.stance}</div>
             </div>
           ))}
@@ -379,7 +439,7 @@ function Meter({ label, value, max, kind }: { label: string; value: number; max:
 const AdventurePanel = memo(function AdventurePanel({ view }: { view: AdventureView }) {
   return (
     <div className="adventure">
-      {view.sceneId && <img className="adv-bg" src={`/assets/scenes/${view.sceneId}.png`} alt="" />}
+      {view.sceneId && <Art kind="scenes" className="adv-bg" id={view.sceneId} />}
       <div className="adv-top">
         <div className="adv-badge">Be Odysseus · {view.ending ? "Journey's end" : `${view.step} of ${view.total} · ${view.title}`}</div>
         <div className="adv-stats">

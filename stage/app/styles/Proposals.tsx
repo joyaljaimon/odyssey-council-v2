@@ -1,62 +1,87 @@
 "use client";
-// Compare AI-generated art-style proposals (assets/tools/style-proposals.mjs) side by side and pick one.
-import { useEffect, useState } from "react";
+// The style switcher: pick the art style every stage shows (calls included). Brain keeps the choice
+// (GET/POST {BRAIN}/style) and pushes it to all open stages, so a switch shows up within a second.
+import { useCallback, useEffect, useState } from "react";
 
-type Manifest = {
-  generatedAt: string;
-  styles: { id: string; label: string; blurb: string }[];
-  subjects: string[];
-  images: { style: string; subject: string; file: string; model: string }[];
-};
+const BRAIN_HTTP = (process.env.NEXT_PUBLIC_BRAIN_WS ?? "ws://localhost:8080").replace(/^ws/, "http");
 
-export default function Proposals() {
-  const [m, setM] = useState<Manifest | null>(null);
-  const [missing, setMissing] = useState(false);
+type Manifest = { id: string; label: string; blurb: string; characters: string[]; scenes: string[]; illustrations: string[]; ready: number; total: number };
+const VECTOR: Manifest = { id: "vector", label: "Original drawn art", blurb: "The hand-drawn red-figure look the app started with. Always complete.", characters: [], scenes: [], illustrations: [], ready: 1, total: 1 };
+
+const preview = (m: Manifest, what: "athena" | "sirens") =>
+  m.id === "vector"
+    ? what === "athena" ? "/assets/characters/athena/body.png" : "/assets/scenes/sirens.png"
+    : what === "athena" ? `/style-assets/${m.id}/characters/athena.jpg` : `/style-assets/${m.id}/scenes/sirens.jpg`;
+
+export default function StyleSwitcher() {
+  const [current, setCurrent] = useState<string | null>(null);
+  const [styles, setStyles] = useState<Manifest[]>([VECTOR]);
+  const [busy, setBusy] = useState<string | null>(null);
   const [zoom, setZoom] = useState<string | null>(null);
-  const [pick, setPick] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch(`/assets/style-proposals/manifest.json?v=${Date.now()}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(setM)
-      .catch(() => setMissing(true));
-    try { setPick(localStorage.getItem("style-pick")); } catch { /* storage unavailable */ }
+  const refresh = useCallback(async () => {
+    try {
+      const r = (await fetch(`${BRAIN_HTTP}/style`, { cache: "no-store" }).then((x) => x.json())) as { style: string; available: string[] };
+      setCurrent(r.style);
+      const ms = await Promise.all(
+        r.available.filter((s) => s !== "vector").map((s) => fetch(`/style-assets/${s}/manifest.json`, { cache: "no-store" }).then((x) => x.json() as Promise<Manifest>).catch(() => null)),
+      );
+      setStyles([VECTOR, ...ms.filter((m): m is Manifest => !!m)]);
+      setError(null);
+    } catch {
+      setError("Can't reach Brain. Is it running on port 8080?");
+    }
   }, []);
 
-  const choose = (id: string) => { setPick(id); try { localStorage.setItem("style-pick", id); } catch { /* ignore */ } };
-  const img = (style: string, subject: string) => m?.images.find((i) => i.style === style && i.subject === subject);
+  useEffect(() => {
+    void refresh();
+    const t = setInterval(refresh, 4000); // picks up styles as their images finish generating
+    return () => clearInterval(t);
+  }, [refresh]);
+
+  const use = async (id: string) => {
+    setBusy(id);
+    try {
+      const r = await fetch(`${BRAIN_HTTP}/style?name=${encodeURIComponent(id)}`, { method: "POST" });
+      if (r.ok) setCurrent(id); else setError(`Couldn't switch to ${id}`);
+    } finally { setBusy(null); }
+  };
 
   return (
     <main className="proposals">
       <header>
-        <h1>Art style proposals</h1>
-        <p>The same two pictures (Athena and the Sirens) in each style. Click a picture to see it large; mark the one you like.</p>
+        <h1>Art style</h1>
+        <p>Pick the look for the stage. The switch reaches every open stage, including a FaceTime call in progress, within a second.</p>
+        <p className="fine"><a href="/stage?sessionId=style-preview" target="_blank" rel="noreferrer">Open a stage preview</a> to watch it change.</p>
+        {error && <p className="error">{error}</p>}
       </header>
-      {missing && <p className="empty">No proposals yet. Run <code>node --env-file=.env assets/tools/style-proposals.mjs</code> (Gemini image generation needs billing enabled on the API key).</p>}
-      {m?.styles.map((s) => (
-        <section key={s.id} className={`proposal ${pick === s.id ? "picked" : ""}`}>
-          <div className="proposal-head">
-            <h2>{s.label} {pick === s.id && <span className="badge">your pick</span>}</h2>
-            <p>{s.blurb}</p>
-            <button onClick={() => choose(s.id)}>{pick === s.id ? "Picked" : "I like this one"}</button>
-          </div>
-          <div className="proposal-images">
-            {m.subjects.map((sub) => {
-              const i = img(s.id, sub);
-              return i ? (
-                <button key={sub} className={`thumb ${sub}`} onClick={() => setZoom(i.file)}>
-                  <img src={`/assets/style-proposals/${i.file}`} alt={`${s.label}: ${sub}`} />
+      {styles.map((m) => {
+        const live = current === m.id;
+        const complete = m.ready >= m.total;
+        return (
+          <section key={m.id} className={`proposal ${live ? "picked" : ""}`}>
+            <div className="proposal-head">
+              <h2>{m.label} {live && <span className="badge">live now</span>}</h2>
+              <p>{m.blurb}</p>
+              {m.id !== "vector" && <p className="fine">{complete ? `All ${m.total} pictures ready` : `${m.ready} of ${m.total} pictures ready (missing ones use the original art)`}</p>}
+              <button disabled={live || busy === m.id} onClick={() => use(m.id)}>
+                {live ? "In use" : busy === m.id ? "Switching…" : "Use this style"}
+              </button>
+            </div>
+            <div className="proposal-images">
+              {(["athena", "sirens"] as const).map((w) => (
+                <button key={w} className={`thumb ${w}`} onClick={() => setZoom(preview(m, w))}>
+                  <img src={preview(m, w)} alt={`${m.label}: ${w}`} />
                 </button>
-              ) : (
-                <div key={sub} className={`thumb ${sub} failed`}>not generated</div>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+              ))}
+            </div>
+          </section>
+        );
+      })}
       {zoom && (
         <div className="zoom" onClick={() => setZoom(null)}>
-          <img src={`/assets/style-proposals/${zoom}`} alt="" />
+          <img src={zoom} alt="" />
         </div>
       )}
     </main>

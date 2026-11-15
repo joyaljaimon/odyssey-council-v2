@@ -3,6 +3,7 @@
 //   WS   /voice?sessionId=...       <-> PCM audio          (Channel, FaceTime)
 //   WS   /stage?sessionId=...       -> StageEvent JSON     (Stage page)
 //   GET  /session?sessionId=...     -> SessionSummary      (Stage /card)
+//   GET|POST /style[?name=]         -> current art style; POST switches every stage (the /styles page)
 //   POST /control?sessionId=&mode=  -> switch mode (the stage page's mode cards; restarts a live call in that mode)
 //   POST /debug/emit?sessionId=...  -> forwards a StageEvent to the stage (testing only)
 //   POST /debug/demo?sessionId=...  -> plays a scripted demo conversation on the stage (no Gemini needed);
@@ -13,7 +14,8 @@ import { WebSocketServer, type WebSocket } from "ws";
 import type { StageEvent, TextRequest } from "@odyssey/contracts";
 import { handleText } from "./text.ts";
 import { handleVoice } from "./voice.ts";
-import { emit, registerStage } from "./stage.ts";
+import { broadcast, emit, registerStage } from "./stage.ts";
+import { availableStyles, currentStyle, setStyle } from "./style.ts";
 import { getSession, peekSession } from "./session.ts";
 import { activeCall } from "./voice.ts";
 import { modeEvents } from "./tools.ts";
@@ -39,6 +41,18 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/debug/emit") {
       emit(url.searchParams.get("sessionId") ?? "demo", await readJson<StageEvent>(req));
       res.writeHead(204).end();
+      return;
+    }
+    if (url.pathname === "/style") {
+      // GET /style -> { style, available }; POST /style?name=<style> switches every stage (the /styles page).
+      const cors = { "access-control-allow-origin": "*", "content-type": "application/json" };
+      if (req.method === "POST") {
+        const name = url.searchParams.get("name") ?? "";
+        if (!setStyle(name)) { res.writeHead(400, cors).end(JSON.stringify({ error: `unknown style ${name}`, available: availableStyles() })); return; }
+        broadcast({ type: "style", style: name });
+        console.log(`[style] switched to ${name}`);
+      }
+      res.writeHead(200, cors).end(JSON.stringify({ style: currentStyle(), available: availableStyles() }));
       return;
     }
     if (req.method === "POST" && url.pathname === "/control") {

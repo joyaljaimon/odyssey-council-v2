@@ -10,3 +10,4 @@ story/raw/*.txt
 
 # AI art prototypes (large); regenerate with assets/tools/style-proposals.mjs
 assets/style-proposals/
+assets/styles/

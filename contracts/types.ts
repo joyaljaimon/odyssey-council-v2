@@ -1,4 +1,4 @@
-// contract version: 5
+// contract version: 6
 // Shared shapes between Channel, Brain, Story and Stage.
 // Announce any change in the team chat BEFORE merging, and bump the version above.
 
@@ -49,7 +49,10 @@ export type StageEvent =
   // v4: "Be Odysseus": the current decision point, the user's choices and their consequences.
   | { type: "adventure"; adventure: AdventureView | null }
   // v5: the three modes. null = the start menu (three mode cards on the screen).
-  | { type: "mode"; mode: AppMode | null };
+  | { type: "mode"; mode: AppMode | null }
+  // v6: the art style every stage shows ("vector" = the original drawn art; others in assets/styles/<style>/).
+  // Broadcast to all stages when it changes on /styles; sent to each stage when it connects.
+  | { type: "style"; style: string };
 
 // v5: Be Odysseus, the Council (philosophy, gods' viewpoints, story explained), or talk about life.
 export const APP_MODES = ["odysseus", "philosophy", "life"] as const;
