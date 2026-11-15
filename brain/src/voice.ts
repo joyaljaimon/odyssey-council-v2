@@ -43,6 +43,8 @@ class Call {
       else this.control(String(data));
     });
     this.ws.on("close", () => this.close());
+    // Each call starts with just the god on stage: no screen until there is something to show.
+    this.stage({ type: "clear" });
     this.stage({ type: "character", character: this.s.character });
     await this.open(this.s.character, { firstTurn: !this.s.disclosed });
     this.prompt("(The FaceTime call has just connected. Greet the caller now.)");
@@ -177,6 +179,8 @@ class Call {
       const out = await runTool(this.s, call.name ?? "", call.args ?? {});
       // Visuals land when the character reaches this point in its speech.
       for (const e of out.events) this.at(this.playhead, () => this.stage(e));
+      // e.g. the next "Be Odysseus" decision: after the outcome and Homer's choice have been told (~12 s)
+      for (const e of out.later ?? []) this.at(Math.max(this.playhead, Date.now()) + 12000, () => this.stage(e));
       if (out.switchTo && out.switchTo !== this.s.character) this.after = { kind: "switch", to: out.switchTo };
       if (out.debateTopic) this.after = { kind: "debate", topic: out.debateTopic };
       if (out.ended) this.after = { kind: "end" };

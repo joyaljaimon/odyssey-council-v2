@@ -4,8 +4,9 @@ import type { Episode, Passage } from "@odyssey/contracts";
 import passagesJson from "../data/passages.json" with { type: "json" };
 import episodesJson from "../data/episodes.json" with { type: "json" };
 import momentsJson from "../data/moments.json" with { type: "json" };
+import adventureJson from "../data/adventure.json" with { type: "json" };
 import illustrationsJson from "../data/illustrations.json" with { type: "json" };
-import type { StoryMoment, Illustration } from "@odyssey/contracts";
+import type { Adventure, StoryMoment, Illustration } from "@odyssey/contracts";
 
 const passages = new Map((passagesJson as Passage[]).map((p) => [p.id, p.text]));
 let errors = 0;
@@ -31,6 +32,15 @@ for (const m of momentsJson as StoryMoment[]) {
     if (!text?.includes(b.quote.text)) fail(`moment ${m.id}: quote not found in ${b.quote.passageId}: "${b.quote.text.slice(0, 60)}…"`);
   }
 }
+const adv = adventureJson as unknown as Adventure;
+for (const node of adv.nodes) {
+  if (!illustrationIds.has(node.illustrationId)) fail(`adventure ${node.id}: unknown illustration ${node.illustrationId}`);
+  if (node.choices.map((c) => c.key).join("") !== "ABC") fail(`adventure ${node.id}: choices must be A, B, C`);
+  if (!node.choices.some((c) => c.key === node.homer.key)) fail(`adventure ${node.id}: homer.key ${node.homer.key} is not a choice`);
+  for (const c of node.choices) if (!adv.virtues[c.virtue]) fail(`adventure ${node.id}/${c.key}: unknown virtue ${c.virtue}`);
+  const text = passages.get(node.homer.quote.passageId);
+  if (!text?.includes(node.homer.quote.text)) fail(`adventure ${node.id}: Homer quote not found in ${node.homer.quote.passageId}`);
+}
 const n = (episodesJson as Episode[]).reduce((s, e) => s + e.keyQuotes.length, 0);
 if (errors) { console.error(`${errors} problem(s)`); process.exit(1); }
-console.log(`✓ ${n} episode quotes and ${beats} story-beat quotes verified against passages.json`);
+console.log(`✓ ${n} episode quotes, ${beats} story-beat quotes and ${adv.nodes.length} adventure quotes verified against passages.json`);

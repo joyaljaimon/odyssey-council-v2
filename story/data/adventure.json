@@ -1,0 +1,131 @@
+{
+  "_comment": "Be Odysseus: the user makes Odysseus' choices at nine decision points. Each choice changes crew, Poseidon's wrath and Athena's favour and adds a virtue. homer = what Odysseus actually did, with a verified quote.",
+  "start": { "crew": 60, "wrath": 0, "favor": 5 },
+  "virtues": {
+    "wisdom": "The Wise Captain",
+    "courage": "The Bold Wanderer",
+    "restraint": "The Patient Captain",
+    "compassion": "The Shepherd of Men",
+    "pride": "The Proud Sacker of Cities"
+  },
+  "homerEnding": "Homer's Odysseus reached Ithaca alone, ten years late, after losing every one of his men, but he got home, kept his word to Penelope and won back his house.",
+  "nodes": [
+    {
+      "id": "lotus",
+      "title": "The Land of the Lotus-Eaters",
+      "sceneId": "lotus-eaters",
+      "illustrationId": "crossroads",
+      "scenario": "Three of your scouts have eaten the lotus. They smile, weep when you speak of home, and refuse to come back to the ships. The rest of the crew is watching what you do.",
+      "choices": [
+        { "key": "A", "label": "Drag them back and tie them under the benches", "virtue": "restraint", "effects": { "crew": 0, "wrath": 0, "favor": 1 }, "outcome": "They fight and weep, but you bind them and order the ships out before anyone else tastes it." },
+        { "key": "B", "label": "Leave them; you can't save men who won't be saved", "virtue": "pride", "effects": { "crew": -3, "wrath": 0, "favor": -1 }, "outcome": "You sail with three fewer men. The crew notices how easily you left them." },
+        { "key": "C", "label": "Taste the lotus yourself, to understand", "virtue": "courage", "effects": { "crew": -2, "wrath": 0, "favor": -2 }, "outcome": "Sweetness, and home forgotten for a day. Your second-in-command drags you back; two men slip away while you dream." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus dragged them back by force.", "quote": { "passageId": "9.5", "text": "though they wept bitterly I forced them back to the ships and made them fast under the benches" } }
+    },
+    {
+      "id": "cyclops-cave",
+      "title": "The Cave of the Cyclops",
+      "sceneId": "cyclops",
+      "illustrationId": "cyclops-eye",
+      "scenario": "Polyphemus has rolled a boulder across the cave mouth and eaten two of your men. He sleeps now, full of wine you gave him. Only he can move the boulder.",
+      "choices": [
+        { "key": "A", "label": "Kill him in his sleep with your sword", "virtue": "courage", "effects": { "crew": -6, "wrath": 2, "favor": -1 }, "outcome": "He dies, and you are sealed in his cave forever. Days pass before the men find a crack in the rock to squeeze through; six do not survive it." },
+        { "key": "B", "label": "Blind him with a sharpened stake and tell him your name is Noman", "virtue": "wisdom", "effects": { "crew": -2, "wrath": 2, "favor": 2 }, "outcome": "He roars for help, and the other Cyclopes laugh at him: Noman is hurting him. At dawn you slip out under his rams." },
+        { "key": "C", "label": "Wake him and plead for the laws of hospitality", "virtue": "compassion", "effects": { "crew": -6, "wrath": 0, "favor": -1 }, "outcome": "He laughs: the Cyclopes care nothing for the gods. He eats more of your men before you find another way out." }
+      ],
+      "homer": { "key": "B", "text": "Homer's Odysseus blinded him and gave the name Noman.", "quote": { "passageId": "9.28", "text": "Noman is killing me by fraud; no man is killing me by force." } }
+    },
+    {
+      "id": "cyclops-taunt",
+      "title": "Escaping the Cyclops",
+      "sceneId": "cyclops",
+      "illustrationId": "ship",
+      "scenario": "You are back on the ship, pulling away from the shore. The blinded giant stands on the cliff, hurling rocks. Your men beg you to stay quiet.",
+      "choices": [
+        { "key": "A", "label": "Shout your real name so the world knows who beat him", "virtue": "pride", "effects": { "crew": 0, "wrath": 4, "favor": -1 }, "outcome": "\"Odysseus, son of Laertes, of Ithaca!\" Now he knows whom to curse, and he prays to his father, Poseidon." },
+        { "key": "B", "label": "Row away in silence", "virtue": "restraint", "effects": { "crew": 0, "wrath": 0, "favor": 2 }, "outcome": "Noman leaves without a name. Poseidon has no one to hunt." },
+        { "key": "C", "label": "Mock him once more as Noman", "virtue": "courage", "effects": { "crew": -2, "wrath": 1, "favor": 0 }, "outcome": "He aims at your voice; a boulder nearly swamps the ship and two men are thrown overboard." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus shouted his real name, and Polyphemus prayed to Poseidon for revenge.", "quote": { "passageId": "9.38", "text": "say it was the valiant warrior Ulysses, son of Laertes, who lives in Ithaca" } }
+    },
+    {
+      "id": "aeolus",
+      "title": "The Bag of Winds",
+      "sceneId": "aeolus",
+      "illustrationId": "bag-of-winds",
+      "scenario": "Aeolus has tied every storm wind into an ox-hide bag and given it to you. Only the west wind blows, straight to Ithaca. It is a nine-day voyage. The crew whispers that the bag is full of gold.",
+      "choices": [
+        { "key": "A", "label": "Hold the rudder yourself, day and night, and tell no one", "virtue": "pride", "effects": { "crew": 0, "wrath": 1, "favor": -1 }, "outcome": "On the tenth day you see the fires of Ithaca and fall asleep at last. The crew opens the bag." },
+        { "key": "B", "label": "Tell the crew exactly what is in the bag", "virtue": "wisdom", "effects": { "crew": 0, "wrath": 0, "favor": 2 }, "outcome": "No secret, no suspicion. The bag stays shut, though the gods have other plans for you yet." },
+        { "key": "C", "label": "Share the steering in shifts so you can rest", "virtue": "compassion", "effects": { "crew": 0, "wrath": 0, "favor": 1 }, "outcome": "Rested men steer well. You sight Ithaca with a clear head." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus steered alone, fell asleep in sight of home, and his crew opened the bag.", "quote": { "passageId": "10.4", "text": "Thus they talked and evil counsels prevailed. They loosed the sack, whereupon the wind flew howling forth" } }
+    },
+    {
+      "id": "circe",
+      "title": "Circe's Island",
+      "sceneId": "circe",
+      "illustrationId": "magic-cup",
+      "scenario": "Your scouts went into Circe's house and came out as pigs. Hermes meets you on the path with a herb that will protect you from her spells.",
+      "choices": [
+        { "key": "A", "label": "Take the herb and go to Circe alone", "virtue": "courage", "effects": { "crew": 0, "wrath": 0, "favor": 2 }, "outcome": "Her spell fails. You make her swear an oath, and your men walk out of the sty as men again." },
+        { "key": "B", "label": "Flee with the ship you have left", "virtue": "restraint", "effects": { "crew": -22, "wrath": 0, "favor": -2 }, "outcome": "You live, but twenty-two of your men stay behind as pigs." },
+        { "key": "C", "label": "Send another party to bargain with her", "virtue": "compassion", "effects": { "crew": -8, "wrath": 0, "favor": -1 }, "outcome": "She feeds them too. Eight more men grunt in her sties before you go yourself." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus went alone with Hermes' herb and freed his men.", "quote": { "passageId": "10.32", "text": "they became men again, younger than they were before" } }
+    },
+    {
+      "id": "sirens",
+      "title": "The Sirens",
+      "sceneId": "sirens",
+      "illustrationId": "siren",
+      "scenario": "Circe warned you: the Sirens' song draws sailors onto their rocks, where bones lie in heaps. You can hear it already, faintly, across the calm water.",
+      "choices": [
+        { "key": "A", "label": "Wax in the crew's ears; have them tie you to the mast so you can listen", "virtue": "wisdom", "effects": { "crew": 0, "wrath": 0, "favor": 2 }, "outcome": "You hear the most beautiful song in the world and beg to be freed; your men only tie you tighter." },
+        { "key": "B", "label": "Wax in everyone's ears, yours too", "virtue": "restraint", "effects": { "crew": 0, "wrath": 0, "favor": 1 }, "outcome": "Silence, and safe passage. You will never know what they sang." },
+        { "key": "C", "label": "Sail closer to hear them properly", "virtue": "pride", "effects": { "crew": -10, "wrath": 0, "favor": -3 }, "outcome": "The ship grinds onto the rocks. Ten men drown before the rest pull you away." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus had himself tied to the mast and told his men to bind him tighter if he begged.", "quote": { "passageId": "12.13", "text": "If I beg and pray you to set me free, then bind me more tightly still." } }
+    },
+    {
+      "id": "scylla",
+      "title": "Scylla and Charybdis",
+      "sceneId": "scylla-charybdis",
+      "illustrationId": "crossroads",
+      "scenario": "A narrow strait. On one side, Scylla: six heads that will each take a man. On the other, Charybdis: a whirlpool that can swallow the whole ship.",
+      "choices": [
+        { "key": "A", "label": "Hug Scylla's cliff and row as fast as you can", "virtue": "wisdom", "effects": { "crew": -6, "wrath": 0, "favor": 1 }, "outcome": "Six men are snatched from the deck. The ship survives." },
+        { "key": "B", "label": "Gamble on Charybdis to try to save everyone", "virtue": "courage", "effects": { "crew": -15, "wrath": 1, "favor": -1 }, "outcome": "The whirlpool takes the stern. Fifteen men are lost and the ship barely floats." },
+        { "key": "C", "label": "Put on your armour and fight Scylla", "virtue": "pride", "effects": { "crew": -12, "wrath": 0, "favor": -2 }, "outcome": "Circe warned you: Scylla is not mortal. While you fight, she strikes twice." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus passed by Scylla and lost six men, as Circe had warned.", "quote": { "passageId": "12.10", "text": "your best chance will be to get by her as fast as ever you can" } }
+    },
+    {
+      "id": "helios",
+      "title": "The Cattle of the Sun",
+      "sceneId": "helios-cattle",
+      "illustrationId": "sun-disk",
+      "scenario": "A month of contrary winds on the island of the Sun. The food is gone. The Sun's sacred cattle graze near the ships, and the men are starving.",
+      "choices": [
+        { "key": "A", "label": "Forbid it, make them swear, and go inland to pray", "virtue": "restraint", "effects": { "crew": -999, "wrath": 1, "favor": 1 }, "outcome": "You pray and fall asleep. Eurylochus talks them into it. Zeus wrecks the ship; you alone survive." },
+        { "key": "B", "label": "Let them eat; the gods can't expect men to starve", "virtue": "compassion", "effects": { "crew": -999, "wrath": 2, "favor": -3 }, "outcome": "A week of feasting, then a thunderbolt. Every man is lost; you cling to the wreck." },
+        { "key": "C", "label": "Stay awake and lead them fishing and hunting birds", "virtue": "wisdom", "effects": { "crew": -2, "wrath": 0, "favor": 2 }, "outcome": "Hungry weeks, but no one touches the herd. When the wind turns, you sail on with your men." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus forbade it but fell asleep; his men ate the cattle and every one of them died.", "quote": { "passageId": "12.26", "text": "we have meat and drink in the ship, let us mind, therefore, and not touch the cattle, or we shall suffer for it" } }
+    },
+    {
+      "id": "suitors",
+      "title": "Home to Ithaca",
+      "sceneId": "return-to-ithaca",
+      "illustrationId": "mask",
+      "scenario": "You are home at last. Over a hundred suitors are eating your herds and courting your wife. Athena offers to disguise you as an old beggar.",
+      "choices": [
+        { "key": "A", "label": "Take the disguise and wait for the right moment", "virtue": "restraint", "effects": { "crew": 0, "wrath": 0, "favor": 2 }, "outcome": "You endure their insults, test who is loyal, and when the bow contest comes, you string it." },
+        { "key": "B", "label": "Walk in as yourself and claim your house", "virtue": "courage", "effects": { "crew": 0, "wrath": 0, "favor": -1 }, "outcome": "A hundred men against one. You fight your way out and must raise allies before you can return." },
+        { "key": "C", "label": "Call the people of Ithaca to an assembly for justice", "virtue": "compassion", "effects": { "crew": 0, "wrath": 0, "favor": 1 }, "outcome": "The assembly argues for days. The suitors' fathers are powerful; justice comes slowly." }
+      ],
+      "homer": { "key": "A", "text": "Homer's Odysseus came home disguised as a beggar and waited for the contest of the bow.", "quote": { "passageId": "21.39", "text": "strung it as easily as a skilled bard strings a new peg of his lyre" } }
+    }
+  ]
+}

@@ -5,13 +5,14 @@
 //   searchSemantic(), findEpisodeSemantic()  async, Gemini embeddings + cosine similarity. Used when
 //                                            data/embeddings.json exists and GEMINI_API_KEY is set; otherwise
 //                                            they fall back to the keyword versions.
-import type { Passage, Episode, Character, Illustration, StoryMoment } from "@odyssey/contracts";
+import type { Adventure, Passage, Episode, Character, Illustration, StoryMoment } from "@odyssey/contracts";
 import passagesJson from "./data/passages.json" with { type: "json" };
 import episodesJson from "./data/episodes.json" with { type: "json" };
 import charactersJson from "./data/characters.json" with { type: "json" };
 import bookTitlesJson from "./data/book-titles.json" with { type: "json" };
 import illustrationsJson from "./data/illustrations.json" with { type: "json" };
 import momentsJson from "./data/moments.json" with { type: "json" };
+import adventureJson from "./data/adventure.json" with { type: "json" };
 
 export const passages = passagesJson as Passage[];
 export const episodes = episodesJson as Episode[];
@@ -19,6 +20,7 @@ export const characters = charactersJson as Character[];
 export const bookTitles = bookTitlesJson as Record<string, string>;
 export const illustrations = illustrationsJson as Illustration[];
 export const moments = momentsJson as StoryMoment[];
+export const adventure = adventureJson as unknown as Adventure;
 
 const passageById = new Map(passages.map((p) => [p.id, p]));
 export const getPassage = (id: string) => passageById.get(id);

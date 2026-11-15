@@ -185,6 +185,88 @@ export const illustrations = {
       <path d="M360,420 C260,460 220,540 240,600 M540,420 C640,460 680,540 660,600" fill="none" stroke="${C.cream}" stroke-width="12" stroke-linecap="round"/>
       ${[0, 1, 2, 3].map((i) => `<path d="M${380 + i * 40},440 C${370 + i * 40},560 ${390 + i * 40},680 ${380 + i * 40},780" fill="none" stroke="${C.cream}" stroke-width="4" opacity="0.6"/>`).join("")}
     </g>`),
+
+  // ---- god emblems and philosophy concepts (Council boards)
+  thunderbolt: svg(`
+    <path d="M520,60 L300,470 L440,470 L330,840 L640,380 L490,380 L620,60 Z" fill="${C.gold}" ${st(12)}/>
+    <path d="M510,110 L360,430" stroke="#fff3c4" stroke-width="10" stroke-linecap="round" opacity="0.8"/>
+    ${[[200, 300], [700, 240], [180, 640], [730, 620]].map(([x, y]) => `<path d="M${x - 30},${y} L${x + 30},${y} M${x},${y - 30} L${x},${y + 30}" stroke="${C.gold}" stroke-width="8" stroke-linecap="round"/>`).join("")}`),
+
+  "winged-sandal": svg(`
+    <path d="M160,660 C160,600 260,580 360,600 L620,640 C700,650 760,690 740,730 L180,730 C160,730 160,700 160,660 Z" fill="${C.clay}" ${st(10)}/>
+    <path d="M300,600 L330,470 M400,610 L410,480 M500,625 L490,500" ${st(12)}/>
+    <path d="M300,470 C380,440 460,450 520,500" fill="none" ${st(12)}/>
+    <path d="M320,470 C260,330 300,200 360,150 C360,260 400,330 450,370 C420,280 450,200 510,170 C500,280 520,350 560,390 C540,320 570,260 620,250 C610,350 580,420 520,470 Z" fill="${C.cream}" ${st(9)}/>
+    ${[360, 430, 500].map((x) => `<path d="M${x},${300 + (x - 360) * 0.3} q30,40 60,60" fill="none" ${st(4)}/>`).join("")}`),
+
+  "sun-disk": svg(`
+    ${Array.from({ length: 16 }, (_, i) => `<path d="M450,450 L${450 + 400 * Math.cos((i * 22.5 * Math.PI) / 180)},${450 + 400 * Math.sin((i * 22.5 * Math.PI) / 180)}" stroke="${C.gold}" stroke-width="${i % 2 ? 14 : 26}" stroke-linecap="round"/>`).join("")}
+    <circle cx="450" cy="450" r="220" fill="${C.gold}" ${st(12)}/>
+    <circle cx="450" cy="450" r="160" fill="#f3d27a"/>
+    <circle cx="395" cy="420" r="18" fill="${C.line}"/><circle cx="505" cy="420" r="18" fill="${C.line}"/>
+    <path d="M380,510 Q450,560 520,510" fill="none" ${st(10)}/>`),
+
+  scales: svg(`
+    <line x1="450" y1="140" x2="450" y2="760" ${st(22)}/><line x1="450" y1="140" x2="450" y2="760" stroke="${C.gold}" stroke-width="10"/>
+    <path d="M300,800 L600,800 L540,740 L360,740 Z" fill="${C.clay}" ${st(9)}/>
+    <line x1="150" y1="230" x2="750" y2="190" ${st(22)}/><line x1="150" y1="230" x2="750" y2="190" stroke="${C.gold}" stroke-width="10"/>
+    <circle cx="450" cy="160" r="30" fill="${C.gold}" ${st(8)}/>
+    ${[[150, 230, 520], [750, 190, 480]].map(([x, y, by]) => `<path d="M${x},${y} L${x - 110},${by} M${x},${y} L${x + 110},${by}" stroke="${C.line}" stroke-width="5"/><path d="M${x - 140},${by} L${x + 140},${by} C${x + 120},${by + 90} ${x - 120},${by + 90} ${x - 140},${by} Z" fill="${C.clay}" ${st(9)}/>`).join("")}
+    <circle cx="150" cy="500" r="40" fill="${C.cream}" ${st(6)}/><path d="M700,470 l50,-60 l50,60 Z" fill="${C.cream}" ${st(6)}/>`),
+
+  hourglass: svg(`
+    <rect x="220" y="90" width="460" height="60" rx="14" fill="${C.clay}" ${st(10)}/><rect x="220" y="750" width="460" height="60" rx="14" fill="${C.clay}" ${st(10)}/>
+    <path d="M280,150 C280,330 420,380 420,450 C420,520 280,570 280,750 L620,750 C620,570 480,520 480,450 C480,380 620,330 620,150 Z" fill="#f8efdc" ${st(10)}/>
+    <path d="M330,230 C360,330 440,380 450,430 C460,380 540,330 570,230 Z" fill="${C.gold}"/>
+    <line x1="450" y1="440" x2="450" y2="640" stroke="${C.gold}" stroke-width="6" stroke-dasharray="10 10"/>
+    <path d="M320,740 C360,640 420,620 450,620 C480,620 540,640 580,740 Z" fill="${C.gold}"/>
+    <line x1="250" y1="150" x2="250" y2="750" ${st(14)}/><line x1="650" y1="150" x2="650" y2="750" ${st(14)}/>`),
+
+  laurel: svg(`
+    ${[-1, 1].map((side) => Array.from({ length: 10 }, (_, i) => {
+      const deg = 100 + i * 16; // from bottom (100deg) round to the top (244deg) on the left; mirrored on the right
+      const r = (deg * Math.PI) / 180;
+      const x = 450 + side * -280 * Math.cos(r) * -1 * -1, y = 470 + 280 * Math.sin(r);
+      const cx = side === -1 ? 450 + 280 * Math.cos(r) : 450 - 280 * Math.cos(r);
+      const rot = side === -1 ? deg + 90 + 25 : -(deg + 90 + 25);
+      return `<ellipse cx="${cx.toFixed(1)}" cy="${y.toFixed(1)}" rx="60" ry="24" fill="${i % 2 ? C.clay : "#7f9a4c"}" ${st(6)} transform="rotate(${rot} ${cx.toFixed(1)} ${y.toFixed(1)})"/>`;
+    }).join("")).join("")}
+    <path d="M380,740 L340,850 M520,740 L560,850" stroke="${C.gold}" stroke-width="16" stroke-linecap="round"/>
+    <circle cx="450" cy="740" r="26" fill="${C.gold}" ${st(6)}/>`),
+
+  mask: svg(`
+    <path d="M200,220 C200,130 700,130 700,220 L690,500 C680,720 560,820 450,820 C340,820 220,720 210,500 Z" fill="${C.cream}" ${st(12)}/>
+    <path d="M280,360 C320,310 400,320 410,380 C380,420 300,420 280,360 Z" fill="${C.line}"/>
+    <path d="M620,360 C580,310 500,320 490,380 C520,420 600,420 620,360 Z" fill="${C.line}"/>
+    <path d="M330,600 C380,700 520,700 570,600 C520,640 380,640 330,600 Z" fill="${C.line}"/>
+    <path d="M450,400 L420,540 L480,540" fill="none" ${st(8)}/>
+    <path d="M230,260 C300,230 380,250 410,290 M670,260 C600,230 520,250 490,290" fill="none" ${st(9)}/>
+    ${[[200, 230], [700, 230]].map(([x, y]) => `<path d="M${x},${y} C${x + (x < 450 ? -90 : 90)},${y - 40} ${x + (x < 450 ? -110 : 110)},${y + 80} ${x + (x < 450 ? -60 : 60)},${y + 140}" fill="none" stroke="${C.clay}" stroke-width="14" stroke-linecap="round"/>`).join("")}`),
+
+  spindle: svg(`
+    <line x1="450" y1="80" x2="450" y2="760" ${st(20)}/><line x1="450" y1="80" x2="450" y2="760" stroke="${C.clay}" stroke-width="8"/>
+    <ellipse cx="450" cy="380" rx="150" ry="210" fill="${C.cream}" ${st(10)}/>
+    ${Array.from({ length: 9 }, (_, i) => `<path d="M${312 + i * 3},${250 + i * 32} C400,${232 + i * 32} 500,${232 + i * 32} ${588 - i * 3},${250 + i * 32}" fill="none" stroke="${C.clay}" stroke-width="6"/>`).join("")}
+    <ellipse cx="450" cy="700" rx="110" ry="36" fill="${C.clayDark}" ${st(8)}/>
+    <path d="M590,320 C700,340 760,460 700,560 C640,660 720,740 820,760" fill="none" stroke="${C.clay}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M800,740 l40,10 M800,780 l40,-30" stroke="${C.gold}" stroke-width="10" stroke-linecap="round"/>`),
+
+  hearth: svg(`
+    <path d="M150,800 L150,430 C150,300 750,300 750,430 L750,800 Z" fill="${C.clay}" ${st(10)}/>
+    ${Array.from({ length: 6 }, (_, r) => Array.from({ length: 6 }, (_, c) => `<rect x="${150 + c * 100 + (r % 2) * 50}" y="${430 + r * 62}" width="100" height="62" fill="none" ${st(3)} opacity="0.4"/>`).join("")).join("")}
+    <path d="M260,800 L260,560 C260,440 640,440 640,560 L640,800 Z" fill="${C.line}"/>
+    <path d="M330,780 C300,680 380,640 360,560 C430,610 420,660 450,690 C470,620 450,560 500,500 C540,590 600,640 570,780 Z" fill="${C.gold}"/>
+    <path d="M380,780 C370,720 420,700 420,650 C460,700 520,700 510,780 Z" fill="#f6dd84"/>
+    <rect x="300" y="770" width="300" height="30" rx="8" fill="${C.clayDark}" ${st(6)}/>
+    <path d="M370,330 C340,250 400,200 380,120 M520,330 C550,250 490,200 510,120" fill="none" stroke="${C.cream}" stroke-width="10" stroke-linecap="round" opacity="0.7"/>`),
+
+  crossroads: svg(`
+    <path d="M370,860 L420,520 L240,120 L320,100 L450,420 L580,100 L660,120 L480,520 L530,860 Z" fill="${C.clay}" ${st(10)}/>
+    <path d="M450,840 L450,560 M450,520 L310,170 M450,520 L590,170" stroke="${C.cream}" stroke-width="10" stroke-dasharray="30 22" stroke-linecap="round"/>
+    <line x1="450" y1="600" x2="450" y2="350" ${st(18)}/>
+    <path d="M450,370 L250,370 L210,410 L250,450 L450,450 Z" fill="${C.cream}" ${st(8)}/>
+    <path d="M450,470 L650,470 L690,510 L650,550 L450,550 Z" fill="${C.cream}" ${st(8)}/>
+    <path d="M280,410 h120 M500,510 h120" ${st(6)}/>`),
 };
 
 export const illustrationIds = Object.keys(illustrations);

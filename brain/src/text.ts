@@ -6,6 +6,7 @@ import { systemPrompt } from "./persona.ts";
 import { getSession, recap, type Session } from "./session.ts";
 import { emit } from "./stage.ts";
 import { cardUrl, functionDeclarations, runTool, sceneUrl } from "./tools.ts";
+import { declineReply, offTopic } from "./guardrails.ts";
 
 export const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL ?? "gemini-3.8-flash";
 const MAX_TOOL_ROUNDS = 6;
@@ -56,7 +57,10 @@ export async function handleText(req: TextRequest): Promise<TextReply> {
   }
   s.transcript.push({ who: "user", text: req.message });
   let reply: TextReply;
-  if (gemini()) {
+  if (offTopic(req.message)) {
+    // Guardrail: obvious off-topic requests (arithmetic, code, news...) never reach the model.
+    reply = { character: s.character, text: declineReply(s.character), attachments: [], stageEvents: [], sessionEnded: false };
+  } else if (gemini()) {
     const before = { history: s.history.length, character: s.character };
     try {
       reply = await geminiTurn(s, req.message);
@@ -112,6 +116,7 @@ async function toolLoop(s: Session, reply: TextReply, flags: { switchTo?: Charac
       const out = await runTool(s, call.name ?? "", (call.args ?? {}) as Record<string, unknown>);
       reply.stageEvents.push(...out.events);
       reply.attachments.push(...out.attachments);
+      if (out.later?.length) { const later = out.later; setTimeout(() => later.forEach((e) => emit(s.id, e)), 6000); }
       if (out.switchTo) flags.switchTo = out.switchTo;
       if (out.debateTopic) flags.debateTopic = out.debateTopic;
       if (out.ended) reply.sessionEnded = true;

@@ -1,5 +1,5 @@
 {
-  "_comment": "contract version: 3. Function declarations Brain registers with Gemini.",
+  "_comment": "contract version: 4. Function declarations Brain registers with Gemini.",
   "tools": [
     {
       "name": "search_odyssey",
@@ -207,6 +207,101 @@
         "required": [
           "gesture"
         ]
+      }
+    },
+    {
+      "name": "explain_idea",
+      "description": "Bring up the screen with a philosophy board: name the idea at the heart of the user's question and show 2-3 gods' viewpoints on it, with an illustration. Use for 'why', 'what does it mean', 'is it right to' questions.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The idea, e.g. 'Nostos: the longing for home'"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "illustration_id": {
+            "type": "string",
+            "description": "From the illustration list in your instructions"
+          },
+          "viewpoints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "god": {
+                  "type": "string",
+                  "enum": [
+                    "athena",
+                    "poseidon",
+                    "zeus",
+                    "hermes",
+                    "helios",
+                    "circe",
+                    "calypso",
+                    "odysseus"
+                  ]
+                },
+                "stance": {
+                  "type": "string",
+                  "description": "One sentence, in that god's voice"
+                }
+              },
+              "required": [
+                "god",
+                "stance"
+              ]
+            }
+          },
+          "passage_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "viewpoints"
+        ]
+      }
+    },
+    {
+      "name": "start_adventure",
+      "description": "Start 'Be Odysseus': the user plays Odysseus and makes his choices at nine moments of the voyage. Returns the first decision point.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "choose",
+      "description": "Be Odysseus: record the user's choice (A, B or C) at the current decision point. Returns what happens, what Homer's Odysseus did, the new stats and the next decision point (or the ending).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ]
+          }
+        },
+        "required": [
+          "choice"
+        ]
+      }
+    },
+    {
+      "name": "end_adventure",
+      "description": "Leave Be Odysseus early (the user wants to stop).",
+      "parameters": {
+        "type": "object",
+        "properties": {}
       }
     }
   ]

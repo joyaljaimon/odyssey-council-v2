@@ -4,6 +4,7 @@ import { GESTURES, type Attachment, type CharacterId, type Gesture, type StageEv
 import toolsJson from "@odyssey/contracts/tools.json" with { type: "json" };
 import { episodes, findEpisodeSemantic, findMoment, getEpisode, getMoment, getPassage, illustrations, searchSemantic } from "@odyssey/story";
 import type { Session } from "./session.ts";
+import { choose, startAdventure } from "./adventure.ts";
 
 export const functionDeclarations = toolsJson.tools as unknown as FunctionDeclaration[];
 
@@ -24,7 +25,10 @@ export type ToolOutcome = {
   switchTo?: CharacterId;
   debateTopic?: string;
   ended?: boolean;
+  later?: StageEvent[]; // shown a few seconds later on a call (e.g. the next decision after the outcome is told)
 };
+
+const GODS = ["athena", "poseidon", "zeus", "hermes", "helios", "circe", "calypso", "odysseus"];
 
 export async function runTool(s: Session, name: string, args: Record<string, unknown>): Promise<ToolOutcome> {
   const out: ToolOutcome = { response: {}, events: [], attachments: [] };
@@ -157,6 +161,46 @@ export async function runTool(s: Session, name: string, args: Record<string, unk
       const g = str("gesture") as Gesture;
       if (!(GESTURES as readonly string[]).includes(g)) { out.response = { ok: false, error: `gesture must be one of ${GESTURES.join(", ")}` }; break; }
       out.events.push({ type: "gesture", character: s.character, gesture: g });
+      out.response = { ok: true };
+      break;
+    }
+    // ---- The Council (contract v4)
+    case "explain_idea": {
+      const title = str("title");
+      const raw = Array.isArray(args.viewpoints) ? (args.viewpoints as { god?: string; stance?: string }[]) : [];
+      const viewpoints = raw
+        .filter((v) => v && GODS.includes(String(v.god)) && String(v.stance ?? "").trim())
+        .slice(0, 3)
+        .map((v) => ({ god: v.god as (typeof GODS)[number] as never, stance: String(v.stance).trim().slice(0, 160) }));
+      if (!title || !viewpoints.length) { out.response = { ok: false, error: "title and at least one viewpoint {god, stance} are required" }; break; }
+      const ill = str("illustration_id");
+      const illustrationId = illustrationIds.has(ill) ? ill : undefined;
+      out.events.push({ type: "screen", open: true }, { type: "board", board: { title, subtitle: str("subtitle") || undefined, illustrationId, viewpoints } });
+      const pids = (Array.isArray(args.passage_ids) ? args.passage_ids.map(String) : []).filter((id) => getPassage(id));
+      if (pids.length) out.events.push({ type: "highlight", passageIds: pids });
+      if (illustrationId) out.attachments.push({ kind: "image", url: illustrationUrl(illustrationId), alt: title });
+      out.response = { ok: true, shown: { title, viewpoints: viewpoints.length, illustration: illustrationId ?? null }, ...(ill && !illustrationId ? { note: `unknown illustration_id ${ill}` } : {}) };
+      break;
+    }
+    // ---- Be Odysseus (contract v4)
+    case "start_adventure": {
+      const { view, forModel } = startAdventure(s);
+      out.events.push({ type: "screen", open: true }, { type: "board", board: null }, { type: "adventure", adventure: view });
+      out.response = { ok: true, ...forModel, note: "Set the scene in the second person, then read the choices A, B, C. Wait for the user's pick." };
+      break;
+    }
+    case "choose": {
+      const r = choose(s, str("choice"));
+      if ("error" in r) { out.response = { ok: false, error: r.error }; break; }
+      out.events.push({ type: "adventure", adventure: r.chosenView }, { type: "highlight", passageIds: r.highlight });
+      out.later = [{ type: "adventure", adventure: r.nextView }];
+      const { chosenView: _c, nextView: _n, ...forModel } = r;
+      out.response = { ok: true, ...forModel };
+      break;
+    }
+    case "end_adventure": {
+      s.adventure = undefined;
+      out.events.push({ type: "adventure", adventure: null });
       out.response = { ok: true };
       break;
     }

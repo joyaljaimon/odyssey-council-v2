@@ -1,4 +1,4 @@
-// contract version: 3
+// contract version: 4
 // Shared shapes between Channel, Brain, Story and Stage.
 // Announce any change in the team chat BEFORE merging, and bump the version above.
 
@@ -41,7 +41,34 @@ export type StageEvent =
   // v3: Story Mode. A character narrates a moment in beats: an illustration, a hand gesture and a highlighted passage.
   | { type: "story_mode"; active: boolean; title?: string }
   | { type: "illustration"; illustrationId: string | null; caption?: string; animation?: IllustrationAnimation }
-  | { type: "gesture"; character: CharacterId; gesture: Gesture };
+  | { type: "gesture"; character: CharacterId; gesture: Gesture }
+  // v4: the screen beside the character. Closed at the start (just the god); opens for the first visual.
+  | { type: "screen"; open: boolean }
+  // v4: a philosophy board: an idea explained from several gods' viewpoints.
+  | { type: "board"; board: Board | null }
+  // v4: "Be Odysseus": the current decision point, the user's choices and their consequences.
+  | { type: "adventure"; adventure: AdventureView | null };
+
+export type GodId = "athena" | "poseidon" | "zeus" | "hermes" | "helios" | "circe" | "calypso" | "odysseus";
+export type Board = {
+  title: string; // the idea, e.g. "Nostos: the longing for home"
+  subtitle?: string;
+  illustrationId?: string;
+  viewpoints: { god: GodId; stance: string }[]; // 2-3 short stances, each from one god
+};
+export type AdventureStats = { crew: number; wrath: number; favor: number }; // wrath/favor 0..10
+export type AdventureView = {
+  step: number; // 1-based
+  total: number;
+  title: string;
+  scenario: string;
+  sceneId?: string;
+  choices: { key: string; label: string }[];
+  stats: AdventureStats;
+  chosen?: string; // key the user picked, shown while the outcome is told
+  homerKey?: string; // what Homer's Odysseus chose, revealed after the user picks
+  ending?: { title: string; summary: string }; // set on the last screen
+};
 
 // v3: gesture layers are assets/characters/<id>/gesture-<gesture>.png ("none" shows no arms).
 export const GESTURES = ["none", "point", "open", "raise", "heart", "think"] as const;
@@ -104,6 +131,24 @@ export type StoryMoment = {
   keywords: string[];
   summary: string;
   beats: StoryBeat[];
+};
+
+// v4: Be Odysseus (story/data/adventure.json).
+export type AdventureChoice = { key: string; label: string; virtue: string; effects: { crew: number; wrath: number; favor: number }; outcome: string };
+export type AdventureNode = {
+  id: string;
+  title: string;
+  sceneId: string;
+  illustrationId: string;
+  scenario: string;
+  choices: AdventureChoice[];
+  homer: { key: string; text: string; quote: { passageId: string; text: string } };
+};
+export type Adventure = {
+  start: AdventureStats;
+  virtues: Record<string, string>;
+  homerEnding: string;
+  nodes: AdventureNode[];
 };
 
 // ---- Map locations (assets/map/locations.json) ----

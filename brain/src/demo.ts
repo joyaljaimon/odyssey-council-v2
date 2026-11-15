@@ -55,14 +55,53 @@ const story: Step[] = [
   { wait: 200, say: { who: "odysseus", text: "Patience won that war, not strength. What wall are you trying to break?" } },
 ];
 
+// &script=council : Athena alone, then the screen comes up with the gods' viewpoints on a question.
+const council: Step[] = [
+  { wait: 0, event: { type: "clear" } },
+  { wait: 300, event: { type: "character", character: "athena" } },
+  { wait: 300, say: { who: "athena", text: "I'm an AI playing Athena. What would you like to explore today?" } },
+  { wait: 1500, event: { type: "caption", text: "You: Why did Odysseus shout his name at the Cyclops? Wasn't he supposed to be clever?" } },
+  { wait: 2500, event: { type: "board", board: { title: "Hubris: pride before the fall", subtitle: "Odysseus shouts his name at the Cyclops", illustrationId: "laurel", viewpoints: [
+    { god: "poseidon", stance: "He blinded my son, then bragged of it to the sky. Pride calls the storm that answers it." },
+    { god: "athena", stance: "His cunning won the cave; his vanity lost him ten years. Win quietly." },
+    { god: "zeus", stance: "Every boast is a debt, and fate always collects." },
+  ] } } },
+  { wait: 0, event: { type: "highlight", passageIds: ["9.38"] } },
+  { wait: 0, event: { type: "gesture", character: "athena", gesture: "point" } },
+  { wait: 200, say: { who: "athena", text: "Clever, yes. But he wanted the world to know it was him. My uncle Poseidon has never forgiven it." } },
+  { wait: 0, event: { type: "gesture", character: "athena", gesture: "open" } },
+  { wait: 200, say: { who: "athena", text: "Zeus would call it a debt. I call it a lesson. Where do you stand?" } },
+  { wait: 0, event: { type: "gesture", character: "athena", gesture: "none" } },
+];
+
+// &script=adventure : Be Odysseus, one decision and its outcome.
+const cyclopsTaunt = {
+  step: 3, total: 9, title: "Escaping the Cyclops", sceneId: "cyclops",
+  scenario: "You are back on the ship, pulling away from the shore. The blinded giant stands on the cliff, hurling rocks. Your men beg you to stay quiet.",
+  choices: [{ key: "A", label: "Shout your real name so the world knows who beat him" }, { key: "B", label: "Row away in silence" }, { key: "C", label: "Mock him once more as Noman" }],
+};
+const adventureScript: Step[] = [
+  { wait: 0, event: { type: "clear" } },
+  { wait: 300, event: { type: "character", character: "athena" } },
+  { wait: 200, event: { type: "adventure", adventure: { ...cyclopsTaunt, stats: { crew: 58, wrath: 2, favor: 7 } } } },
+  { wait: 200, say: { who: "athena", text: "You are Odysseus now. The giant is blind and raging on the cliff. A, B or C?" } },
+  { wait: 1500, event: { type: "caption", text: "You: B. Row away in silence." } },
+  { wait: 1500, event: { type: "adventure", adventure: { ...cyclopsTaunt, stats: { crew: 58, wrath: 2, favor: 9 }, chosen: "B", homerKey: "A" } } },
+  { wait: 0, event: { type: "highlight", passageIds: ["9.38"] } },
+  { wait: 200, say: { who: "athena", text: "Noman leaves without a name, and Poseidon has no one to hunt. Homer's Odysseus could not resist shouting it." } },
+  { wait: 800, event: { type: "adventure", adventure: { step: 9, total: 9, title: "Home to Ithaca", scenario: "", choices: [], stats: { crew: 41, wrath: 2, favor: 9 },
+    ending: { title: "The Patient Captain", summary: "You chose as Homer's Odysseus did 4 of 9 times. You reach Ithaca with 41 of 60 men (he arrived alone)." } } } },
+  { wait: 200, say: { who: "athena", text: "The Patient Captain. Forty-one men home. What would you do differently?" } },
+];
+
 let running = new Map<string, boolean>();
 
-export async function playDemo(sessionId: string, which: "conversation" | "story" = "conversation") {
+export async function playDemo(sessionId: string, which: "conversation" | "story" | "council" | "adventure" = "conversation") {
   if (running.get(sessionId)) return;
   running.set(sessionId, true);
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   try {
-    for (const step of which === "story" ? story : script) {
+    for (const step of { conversation: script, story, council, adventure: adventureScript }[which]) {
       await sleep(step.wait);
       if (step.event) emit(sessionId, step.event);
       if (step.say) {

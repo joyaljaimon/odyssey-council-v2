@@ -4,7 +4,7 @@
 // Layout keeps everything important 40 px inside the edges (FaceTime crops).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { CharacterId, Gesture, IllustrationAnimation, MapLocation, Passage, StageEvent } from "@odyssey/contracts";
+import type { AdventureView, Board, CharacterId, GodId, Gesture, IllustrationAnimation, MapLocation, Passage, StageEvent } from "@odyssey/contracts";
 import passagesJson from "@odyssey/story/data/passages.json";
 import bookTitlesJson from "@odyssey/story/data/book-titles.json";
 
@@ -26,6 +26,8 @@ const titleCase = (s: string) =>
 
 type Visual = { kind: "scene"; id: string } | { kind: "map"; id: string } | null;
 type Illustration = { id: string; caption?: string; animation: IllustrationAnimation; key: number };
+const GOD_EMBLEM: Record<GodId, string> = { athena: "owl", poseidon: "trident", zeus: "thunderbolt", hermes: "winged-sandal", helios: "sun-disk", circe: "magic-cup", calypso: "loom", odysseus: "ship" };
+const GOD_NAME: Record<GodId, string> = { athena: "Athena", poseidon: "Poseidon", zeus: "Zeus", hermes: "Hermes", helios: "Helios", circe: "Circe", calypso: "Calypso", odysseus: "Odysseus" };
 const GESTURE_LAYERS: Exclude<Gesture, "none">[] = ["point", "open", "raise", "heart", "think"];
 
 export default function Stage() {
@@ -44,6 +46,9 @@ export default function Stage() {
   const [story, setStory] = useState<{ active: boolean; title?: string }>({ active: false });
   const [illustration, setIllustration] = useState<Illustration | null>(null);
   const [gestures, setGestures] = useState<Partial<Record<CharacterId, Gesture>>>({});
+  const [screen, setScreen] = useState(false); // closed: just the god; opens with the first visual
+  const [board, setBoard] = useState<(Board & { key: number }) | null>(null);
+  const [adv, setAdv] = useState<AdventureView | null>(null);
   const keyRef = useRef(0);
   const speakerTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -51,6 +56,9 @@ export default function Stage() {
     setVisuals((prev) => [...prev.slice(-1), { v, key: ++keyRef.current }]);
 
   const apply = useCallback((e: StageEvent) => {
+    // Anything visual brings the screen up.
+    if (["scene", "map", "highlight", "illustration"].includes(e.type) || (e.type === "story_mode" && e.active) ||
+        (e.type === "board" && e.board) || (e.type === "adventure" && e.adventure) || (e.type === "character" && e.side)) setScreen(true);
     switch (e.type) {
       case "character":
         if (e.side) {
@@ -74,7 +82,10 @@ export default function Stage() {
       case "scene": showVisual({ kind: "scene", id: e.sceneId }); break;
       case "map": showVisual({ kind: "map", id: e.locationId }); break;
       case "caption": setCaption(e.text); break;
-      case "clear": setHighlighted([]); setVisuals([]); setCaption(""); setDebate(null); setStory({ active: false }); setIllustration(null); setGestures({}); break;
+      case "clear": setHighlighted([]); setVisuals([]); setCaption(""); setDebate(null); setStory({ active: false }); setIllustration(null); setGestures({}); setScreen(false); setBoard(null); setAdv(null); break;
+      case "screen": setScreen(e.open); break;
+      case "board": setBoard(e.board ? { ...e.board, key: ++keyRef.current } : null); if (e.board) setAdv(null); break;
+      case "adventure": setAdv(e.adventure); if (e.adventure) setBoard(null); break;
       case "story_mode": setStory({ active: e.active, title: e.title }); if (!e.active) setIllustration(null); break;
       case "illustration":
         setIllustration(e.illustrationId ? { id: e.illustrationId, caption: e.caption, animation: e.animation ?? "pop", key: ++keyRef.current } : null);
@@ -112,7 +123,7 @@ export default function Stage() {
 
   return (
     <div className="stage-viewport">
-      <div className="stage" style={{ transform: `scale(${scale})` }}>
+      <div className={`stage ${screen ? "screen-open" : "idle"}`} style={{ transform: `scale(${scale})` }}>
         <div className="meander top" />
         <div className="meander bottom" />
 
@@ -125,8 +136,8 @@ export default function Stage() {
           <Figure id={character} mouth={mouths[character] ?? 0} gesture={gestures[character]} className="solo" />
         )}
 
-        <div className={`visual ${inDebate ? "debate" : ""} ${story.active ? "story" : ""}`}>
-          {visuals.length === 0 && !story.active && !illustration && <TitleCard />}
+        <div className={`visual ${inDebate ? "debate" : ""} ${story.active || board || adv ? "story" : ""}`}>
+          {visuals.length === 0 && !story.active && !illustration && !board && !adv && <TitleCard />}
           {visuals.map(({ v, key }) => (
             <div key={key} className="layer fade-in">
               {v?.kind === "scene" && <img src={`/assets/scenes/${v.id}.png`} alt={v.id} />}
@@ -143,9 +154,11 @@ export default function Stage() {
             </div>
           )}
           {story.active && <div className="story-banner fade-in">Story Mode{story.title ? ` · ${story.title}` : ""}</div>}
+          {board && !illustration && <BoardView key={board.key} board={board} compact={inDebate} />}
+          {adv && !illustration && <AdventurePanel view={adv} />}
         </div>
 
-        <TextPanel highlighted={highlighted} compact={inDebate} story={story.active} />
+        <TextPanel highlighted={highlighted} compact={inDebate} story={story.active || !!board || !!adv} />
 
         <div className={`caption ${inDebate ? "debate" : ""}`}>
           {caption && <span key={caption} className="fade-in">{caption}</span>}
@@ -236,6 +249,81 @@ function JourneyMap({ locationId }: { locationId: string }) {
   );
 }
 
+// ---------------------------------------------------------------- the Council: an idea from several gods' viewpoints
+
+function BoardView({ board, compact }: { board: Board; compact: boolean }) {
+  return (
+    <div className={`board ${compact ? "compact" : ""}`}>
+      <div className="board-art anim-pop">
+        <div className="plate">
+          <img src={`/assets/illustrations/${board.illustrationId ?? GOD_EMBLEM[board.viewpoints[0]?.god ?? "athena"]}.png`} alt="" />
+        </div>
+      </div>
+      <div className="board-body">
+        <div className="board-kicker">The Council</div>
+        <div className="board-title">{board.title}</div>
+        {board.subtitle && <div className="board-subtitle">{board.subtitle}</div>}
+        <div className="viewpoints">
+          {board.viewpoints.map((v, i) => (
+            <div key={v.god + i} className="viewpoint" style={{ animationDelay: `${300 + i * 450}ms` }}>
+              <img src={`/assets/illustrations/${GOD_EMBLEM[v.god]}.png`} alt="" />
+              <div><b>{GOD_NAME[v.god]}</b> {v.stance}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Be Odysseus
+
+function Meter({ label, value, max, kind }: { label: string; value: number; max: number; kind: string }) {
+  return (
+    <div className={`meter ${kind}`}>
+      <span>{label}</span>
+      <i><em style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%` }} /></i>
+      <b>{value}</b>
+    </div>
+  );
+}
+
+function AdventurePanel({ view }: { view: AdventureView }) {
+  return (
+    <div className="adventure">
+      {view.sceneId && <img className="adv-bg" src={`/assets/scenes/${view.sceneId}.png`} alt="" />}
+      <div className="adv-top">
+        <div className="adv-badge">Be Odysseus · {view.ending ? "Journey's end" : `${view.step} of ${view.total} · ${view.title}`}</div>
+        <div className="adv-stats">
+          <Meter label="Crew" value={view.stats.crew} max={60} kind="crew" />
+          <Meter label="Poseidon's wrath" value={view.stats.wrath} max={10} kind="wrath" />
+          <Meter label="Athena's favour" value={view.stats.favor} max={10} kind="favor" />
+        </div>
+      </div>
+      {view.ending ? (
+        <div className="adv-ending fade-in">
+          <div className="adv-ending-kicker">Your title</div>
+          <div className="adv-ending-title">{view.ending.title}</div>
+          <div className="adv-ending-summary">{view.ending.summary}</div>
+        </div>
+      ) : (
+        <>
+          <div key={view.title} className="adv-scenario fade-in">{view.scenario}</div>
+          <div className="adv-choices">
+            {view.choices.map((c) => (
+              <div key={view.title + c.key} className={`adv-choice ${view.chosen ? (view.chosen === c.key ? "chosen" : "other") : ""}`}>
+                <span className="key">{c.key}</span>
+                <span className="label">{c.label}</span>
+                {view.homerKey === c.key && <span className="homer">Homer&apos;s Odysseus</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- text
 
 function TextPanel({ highlighted, compact, story = false }: { highlighted: string[]; compact: boolean; story?: boolean }) {
@@ -302,6 +390,17 @@ function DebugPanel({ onEvent }: { onEvent: (e: StageEvent) => void }) {
       {btn("off", { type: "story_mode", active: false })}
       {(["trojan-horse", "troy-walls", "cyclops-eye", "siren", "bag-of-winds", "great-wave", "bow", "owl"] as const).map((id, i) =>
         btn(id, { type: "illustration", illustrationId: id, caption: id.replace(/-/g, " "), animation: (["pop", "zoom", "slide", "float"] as const)[i % 4] }))}
+      <br />
+      <b>Council</b>{" "}
+      <button onClick={() => onEvent({ type: "screen", open: false })}>screen off</button>
+      <button onClick={() => onEvent({ type: "screen", open: true })}>screen on</button>
+      {btn("board", { type: "board", board: { title: "Hubris: pride before the fall", subtitle: "Odysseus shouts his name at the Cyclops", illustrationId: "laurel", viewpoints: [
+        { god: "poseidon", stance: "He blinded my son and then bragged of it. Pride asks for the storm that answers it." },
+        { god: "athena", stance: "His cunning won the cave; his vanity lost the voyage. Win quietly." },
+        { god: "zeus", stance: "Every boast is a debt. Fate collects, sooner or later." }] } })}
+      {btn("adventure", { type: "adventure", adventure: { step: 3, total: 9, title: "Escaping the Cyclops", sceneId: "cyclops", scenario: "You are back on the ship, pulling away. The blinded giant stands on the cliff, hurling rocks. Your men beg you to stay quiet.", choices: [{ key: "A", label: "Shout your real name so the world knows who beat him" }, { key: "B", label: "Row away in silence" }, { key: "C", label: "Mock him once more as Noman" }], stats: { crew: 54, wrath: 2, favor: 6 } } })}
+      {btn("chose B", { type: "adventure", adventure: { step: 3, total: 9, title: "Escaping the Cyclops", sceneId: "cyclops", scenario: "You are back on the ship, pulling away. The blinded giant stands on the cliff, hurling rocks. Your men beg you to stay quiet.", choices: [{ key: "A", label: "Shout your real name so the world knows who beat him" }, { key: "B", label: "Row away in silence" }, { key: "C", label: "Mock him once more as Noman" }], stats: { crew: 54, wrath: 2, favor: 8 }, chosen: "B", homerKey: "A" } })}
+      {btn("ending", { type: "adventure", adventure: { step: 9, total: 9, title: "Home to Ithaca", scenario: "", choices: [], stats: { crew: 41, wrath: 3, favor: 9 }, ending: { title: "The Patient Captain", summary: "You chose as Homer's Odysseus did 4 of 9 times. You reach Ithaca with 41 of 60 men (he arrived alone)." } } })}
       <br />
       <b>Gesture</b>{" "}
       {(["none", "point", "open", "raise", "heart", "think"] as const).map((g) =>
