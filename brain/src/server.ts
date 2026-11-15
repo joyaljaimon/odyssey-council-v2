@@ -3,6 +3,7 @@
 //   WS   /voice?sessionId=...       <-> PCM audio          (Channel, FaceTime)
 //   WS   /stage?sessionId=...       -> StageEvent JSON     (Stage page)
 //   GET  /session?sessionId=...     -> SessionSummary      (Stage /card)
+//   POST /control?sessionId=&mode=  -> switch mode (the stage page's mode cards; restarts a live call in that mode)
 //   POST /debug/emit?sessionId=...  -> forwards a StageEvent to the stage (testing only)
 //   POST /debug/demo?sessionId=...  -> plays a scripted demo conversation on the stage (no Gemini needed);
 //                                      &script=story | council | adventure for Story Mode, the Council, Be Odysseus
@@ -13,7 +14,10 @@ import type { StageEvent, TextRequest } from "@odyssey/contracts";
 import { handleText } from "./text.ts";
 import { handleVoice } from "./voice.ts";
 import { emit, registerStage } from "./stage.ts";
-import { peekSession } from "./session.ts";
+import { getSession, peekSession } from "./session.ts";
+import { activeCall } from "./voice.ts";
+import { modeEvents } from "./tools.ts";
+import { APP_MODES, type AppMode } from "@odyssey/contracts";
 import { playDemo } from "./demo.ts";
 
 const PORT = Number(process.env.BRAIN_PORT ?? 8080);
@@ -35,6 +39,17 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/debug/emit") {
       emit(url.searchParams.get("sessionId") ?? "demo", await readJson<StageEvent>(req));
       res.writeHead(204).end();
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/control") {
+      // The stage page's mode cards: POST /control?sessionId=...&mode=odysseus|philosophy|life|menu
+      const id = url.searchParams.get("sessionId") ?? "demo";
+      const m = url.searchParams.get("mode") ?? "menu";
+      const mode = (APP_MODES as readonly string[]).includes(m) ? (m as AppMode) : undefined;
+      const call = activeCall(id);
+      if (call) void call.tappedMode(mode);
+      else for (const e of modeEvents(getSession(id), mode)) emit(id, e);
+      res.writeHead(204, { "access-control-allow-origin": "*" }).end();
       return;
     }
     if (req.method === "GET" && url.pathname === "/session") {

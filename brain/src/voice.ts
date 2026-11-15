@@ -7,20 +7,20 @@ import { Modality, type LiveServerMessage, type Session as LiveSession } from "@
 import type { WebSocket } from "ws";
 import {
   AGENT_AUDIO_SAMPLE_RATE, USER_AUDIO_SAMPLE_RATE,
-  type CharacterId, type StageEvent, type VoiceControlMessage,
+  type AppMode, type CharacterId, type StageEvent, type VoiceControlMessage,
 } from "@odyssey/contracts";
 import { getCharacter } from "@odyssey/story";
-import { systemPrompt, voiceFor } from "./persona.ts";
+import { MODE_NAMES, systemPrompt, voiceFor } from "./persona.ts";
 import { getSession, recap, type Session } from "./session.ts";
 import { emit, mouthLevel } from "./stage.ts";
 import { gemini } from "./text.ts";
-import { functionDeclarations, runTool } from "./tools.ts";
+import { modeEvents, runTool, toolsFor } from "./tools.ts";
 
 export const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL ?? "gemini-3.8-live";
 export const MOUTH_EVENT_MS = 50;
 const BYTES_PER_MS = (AGENT_AUDIO_SAMPLE_RATE * 2) / 1000; // PCM16 mono
 
-type After = { kind: "switch"; to: CharacterId } | { kind: "debate"; topic: string } | { kind: "end" };
+type After = { kind: "switch"; to: CharacterId } | { kind: "debate"; topic: string } | { kind: "end" } | { kind: "mode" };
 
 class Call {
   private live: LiveSession | null = null;
@@ -60,8 +60,8 @@ class Call {
       config: {
         responseModalities: [Modality.AUDIO],
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceFor(character) } } },
-        systemInstruction: systemPrompt(character, "voice", opts),
-        tools: [{ functionDeclarations }],
+        systemInstruction: systemPrompt(character, "voice", { ...opts, appMode: this.s.mode }),
+        tools: [{ functionDeclarations: toolsFor(this.s.mode) }],
         inputAudioTranscription: {},
         outputAudioTranscription: {},
         contextWindowCompression: { slidingWindow: {} },
@@ -159,6 +159,7 @@ class Call {
     if (!after) return;
     await this.waitForPlayback();
     if (after.kind === "switch") await this.switchTo(after.to);
+    else if (after.kind === "mode") await this.reopenForMode("(The mode just changed. Start it now, as your instructions for this mode say.)");
     else if (after.kind === "debate") await this.debate(after.topic);
     else {
       this.send({ type: "ended" });
@@ -184,6 +185,7 @@ class Call {
       if (out.switchTo && out.switchTo !== this.s.character) this.after = { kind: "switch", to: out.switchTo };
       if (out.debateTopic) this.after = { kind: "debate", topic: out.debateTopic };
       if (out.ended) this.after = { kind: "end" };
+      if (out.modeChanged && !this.after) this.after = { kind: "mode" };
       functionResponses.push({ id: call.id, name: call.name, response: out.response });
     }
     this.live?.sendToolResponse({ functionResponses });
@@ -197,6 +199,21 @@ class Call {
     await this.open(to, { firstTurn: false, summary: recap(this.s) });
     this.busy = false;
     this.prompt("(You have just taken over the call. Greet the caller briefly by name and continue.)");
+  }
+
+  /** A Live session's prompt and tools are fixed, so a new mode means a new session (same voice, with a recap). */
+  async reopenForMode(prompt: string) {
+    this.busy = true;
+    await this.open(this.s.character, { firstTurn: false, summary: recap(this.s) });
+    this.busy = false;
+    this.prompt(prompt);
+  }
+
+  /** The user tapped a mode card on the stage page. */
+  async tappedMode(mode: AppMode | undefined) {
+    for (const e of modeEvents(this.s, mode)) this.stage(e);
+    this.interrupt();
+    await this.reopenForMode(mode ? `(The user just tapped "${MODE_NAMES[mode]}" on the screen. Start that mode now.)` : "(The user went back to the menu. Offer the three choices again.)");
   }
 
   /** Odysseus (left) and Poseidon (right) each speak twice, then Athena returns and asks the caller to pick. */
@@ -239,6 +256,9 @@ class Call {
   }
 }
 
+const calls = new Map<string, Call>();
+export const activeCall = (sessionId: string) => calls.get(sessionId);
+
 export function handleVoice(sessionId: string, ws: WebSocket) {
   console.log(`[voice] session ${sessionId} connected`);
   const s = getSession(sessionId);
@@ -249,7 +269,10 @@ export function handleVoice(sessionId: string, ws: WebSocket) {
     ws.on("message", () => {});
     return;
   }
-  new Call(s, ws).start().catch((err) => {
+  const call = new Call(s, ws);
+  calls.set(sessionId, call);
+  ws.on("close", () => { if (calls.get(sessionId) === call) calls.delete(sessionId); });
+  call.start().catch((err) => {
     console.error(`[voice ${sessionId}] failed to start`, err);
     ws.close(1011, "live session failed");
   });

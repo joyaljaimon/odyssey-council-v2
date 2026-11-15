@@ -4,13 +4,23 @@
 // Layout keeps everything important 40 px inside the edges (FaceTime crops).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { AdventureView, Board, CharacterId, GodId, Gesture, IllustrationAnimation, MapLocation, Passage, StageEvent } from "@odyssey/contracts";
+import type { AdventureView, AppMode, Board, CharacterId, GodId, Gesture, IllustrationAnimation, MapLocation, Passage, StageEvent } from "@odyssey/contracts";
 import passagesJson from "@odyssey/story/data/passages.json";
 import bookTitlesJson from "@odyssey/story/data/book-titles.json";
 
 const passages = passagesJson as Passage[];
 const bookTitles = bookTitlesJson as Record<string, string>;
 const BRAIN_WS = process.env.NEXT_PUBLIC_BRAIN_WS ?? "ws://localhost:8080";
+const BRAIN_HTTP = BRAIN_WS.replace(/^ws/, "http");
+
+const MODES: { id: AppMode; title: string; blurb: string; say: string; emblem: string; examples: string[] }[] = [
+  { id: "odysseus", title: "Be Odysseus", blurb: "Make his choices at nine moments of the voyage and write your own Odyssey.", say: "Be Odysseus", emblem: "ship",
+    examples: ["Your voyage is starting…"] },
+  { id: "philosophy", title: "The Council", blurb: "The gods debate the Odyssey's ideas and explain the story, on screen.", say: "The Council", emblem: "scales",
+    examples: ["\u201cIs revenge ever justified?\u201d", "\u201cWhy did Odysseus shout his name?\u201d", "\u201cTell me about the wooden horse\u201d"] },
+  { id: "life", title: "Talk about life", blurb: "Bring your own storm and find the part of the Odyssey that speaks to it.", say: "Talk about life", emblem: "hearth",
+    examples: ["\u201cI keep procrastinating\u201d", "\u201cI have to choose between two jobs\u201d", "\u201cI miss home\u201d"] },
+];
 const NAMES: Record<CharacterId, string> = { athena: "Athena", odysseus: "Odysseus", poseidon: "Poseidon", circe: "Circe" };
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX", "XXI", "XXII", "XXIII", "XXIV"];
 
@@ -46,7 +56,8 @@ export default function Stage() {
   const [story, setStory] = useState<{ active: boolean; title?: string }>({ active: false });
   const [illustration, setIllustration] = useState<Illustration | null>(null);
   const [gestures, setGestures] = useState<Partial<Record<CharacterId, Gesture>>>({});
-  const [screen, setScreen] = useState(false); // closed: just the god; opens with the first visual
+  const [screen, setScreen] = useState(true);
+  const [mode, setMode] = useState<AppMode | null>(null); // null = the start menu
   const [board, setBoard] = useState<(Board & { key: number }) | null>(null);
   const [adv, setAdv] = useState<AdventureView | null>(null);
   const keyRef = useRef(0);
@@ -82,7 +93,8 @@ export default function Stage() {
       case "scene": showVisual({ kind: "scene", id: e.sceneId }); break;
       case "map": showVisual({ kind: "map", id: e.locationId }); break;
       case "caption": setCaption(e.text); break;
-      case "clear": setHighlighted([]); setVisuals([]); setCaption(""); setDebate(null); setStory({ active: false }); setIllustration(null); setGestures({}); setScreen(false); setBoard(null); setAdv(null); break;
+      case "clear": setHighlighted([]); setVisuals([]); setCaption(""); setDebate(null); setStory({ active: false }); setIllustration(null); setGestures({}); setScreen(true); setBoard(null); setAdv(null); setMode(null); break;
+      case "mode": setMode(e.mode); setVisuals([]); setHighlighted([]); setBoard(null); setAdv(null); setIllustration(null); setStory({ active: false }); setScreen(true); break;
       case "screen": setScreen(e.open); break;
       case "board": setBoard(e.board ? { ...e.board, key: ++keyRef.current } : null); if (e.board) setAdv(null); break;
       case "adventure": setAdv(e.adventure); if (e.adventure) setBoard(null); break;
@@ -123,7 +135,7 @@ export default function Stage() {
 
   return (
     <div className="stage-viewport">
-      <div className={`stage ${screen ? "screen-open" : "idle"}`} style={{ transform: `scale(${scale})` }}>
+      <div className={`stage ${screen ? "screen-open" : "idle"} ${mode ? `mode-${mode}` : "menu"} ${highlighted.length ? "" : "no-text"}`} style={{ transform: `scale(${scale})` }}>
         <div className="meander top" />
         <div className="meander bottom" />
 
@@ -137,7 +149,8 @@ export default function Stage() {
         )}
 
         <div className={`visual ${inDebate ? "debate" : ""} ${story.active || board || adv ? "story" : ""}`}>
-          {visuals.length === 0 && !story.active && !illustration && !board && !adv && <TitleCard />}
+          {!mode && <Menu sessionId={sessionId} />}
+          {mode && visuals.length === 0 && !story.active && !illustration && !board && !adv && <ModeIntro mode={mode} />}
           {visuals.map(({ v, key }) => (
             <div key={key} className="layer fade-in">
               {v?.kind === "scene" && <img src={`/assets/scenes/${v.id}.png`} alt={v.id} />}
@@ -164,6 +177,12 @@ export default function Stage() {
           {caption && <span key={caption} className="fade-in">{caption}</span>}
         </div>
 
+        {mode && (
+          <div key={mode} className="mode-pill fade-in">
+            <b>{MODES.find((m) => m.id === mode)?.title}</b>
+            <span>say &ldquo;menu&rdquo; to change</span>
+          </div>
+        )}
         {!connected && <div className="offline">connecting…</div>}
         {debug && <DebugPanel onEvent={apply} />}
       </div>
@@ -245,6 +264,43 @@ function JourneyMap({ locationId }: { locationId: string }) {
           <span className={target.x > 70 ? "left" : ""}>{target.name}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- the start menu and the mode intros
+
+const tap = (sessionId: string, mode: AppMode | "menu") =>
+  fetch(`${BRAIN_HTTP}/control?sessionId=${encodeURIComponent(sessionId)}&mode=${mode}`, { method: "POST" }).catch(() => {});
+
+function Menu({ sessionId }: { sessionId: string }) {
+  return (
+    <div className="menu-screen">
+      <div className="menu-kicker">Where shall we sail?</div>
+      <div className="menu-cards">
+        {MODES.map((m, i) => (
+          <button key={m.id} className="menu-card" style={{ animationDelay: `${i * 140}ms` }} onClick={() => tap(sessionId, m.id)}>
+            <span className="menu-num">{i + 1}</span>
+            <span className="menu-plate"><img src={`/assets/illustrations/${m.emblem}.png`} alt="" /></span>
+            <span className="menu-title">{m.title}</span>
+            <span className="menu-blurb">{m.blurb}</span>
+            <span className="menu-say">Say &ldquo;{m.say}&rdquo;</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ModeIntro({ mode }: { mode: AppMode }) {
+  const m = MODES.find((x) => x.id === mode)!;
+  return (
+    <div className="mode-intro fade-in">
+      <span className="menu-plate big"><img src={`/assets/illustrations/${m.emblem}.png`} alt="" /></span>
+      <div>
+        <div className="menu-kicker">{m.title}</div>
+        <div className="mode-intro-lines">{m.examples.map((e) => <div key={e}>{e}</div>)}</div>
+      </div>
     </div>
   );
 }

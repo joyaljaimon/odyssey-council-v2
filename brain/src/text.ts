@@ -5,7 +5,7 @@ import { findEpisode, getCharacter, getEpisode } from "@odyssey/story";
 import { systemPrompt } from "./persona.ts";
 import { getSession, recap, type Session } from "./session.ts";
 import { emit } from "./stage.ts";
-import { cardUrl, functionDeclarations, runTool, sceneUrl } from "./tools.ts";
+import { cardUrl, runTool, sceneUrl, toolsFor } from "./tools.ts";
 import { declineReply, offTopic } from "./guardrails.ts";
 
 export const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL ?? "gemini-3.8-flash";
@@ -52,7 +52,7 @@ export async function handleText(req: TextRequest): Promise<TextReply> {
   const s = getSession(req.sessionId);
   if (s.summary.ended) {
     // A new message after the end starts a fresh conversation with Athena.
-    Object.assign(s, { character: "athena", history: [], transcript: [], disclosed: false });
+    Object.assign(s, { character: "athena", history: [], transcript: [], disclosed: false, mode: undefined, adventure: undefined, story: undefined });
     s.summary = { sessionId: s.id, character: "athena", ended: false };
   }
   s.transcript.push({ who: "user", text: req.message });
@@ -98,8 +98,8 @@ async function toolLoop(s: Session, reply: TextReply, flags: { switchTo?: Charac
     const res = await generate({
       contents: s.history,
       config: {
-        systemInstruction: systemPrompt(s.character, "text", { firstTurn: !s.disclosed }),
-        tools: [{ functionDeclarations }],
+        systemInstruction: systemPrompt(s.character, "text", { firstTurn: !s.disclosed, appMode: s.mode }),
+        tools: [{ functionDeclarations: toolsFor(s.mode) }],
         temperature: 0.8,
       },
     });
@@ -171,7 +171,7 @@ async function runTextDebate(s: Session, topic: string): Promise<{ text: string;
     events.push({ type: "character", character: t.who, side: t.side });
     const res = await generate({
       contents: [{ role: "user", parts: [{ text: `Debate topic: ${topic}\n\nDebate so far:\n${lines.join("\n") || "(you open)"}\n\nGive your next argument in under 40 words. Answer your opponent directly. No quotes unless they appear above.` }] }],
-      config: { systemInstruction: systemPrompt(t.who, "text", { firstTurn: false, summary: recap(s, 6) }), temperature: 0.9 },
+      config: { systemInstruction: systemPrompt(t.who, "text", { firstTurn: false, summary: recap(s, 6), appMode: s.mode }), temperature: 0.9 },
     });
     const text = res.text?.trim() ?? "";
     lines.push(`${getCharacter(t.who)?.name}: ${text}`);
@@ -203,7 +203,7 @@ function offlineTurn(s: Session, message: string): TextReply {
 
   if (!s.summary.problem && GREETING.test(message.trim())) {
     return { ...base, character: "athena", stageEvents: [{ type: "character", character: "athena" }],
-      text: "I'm an AI playing Athena, goddess of wisdom. Every great solution begins with an Odyssey. Tell me, traveler, what storm are you sailing through?" };
+      text: "I'm an AI playing Athena, goddess of wisdom. Every great solution begins with an Odyssey. Where shall we sail?\n1. Be Odysseus\n2. The Council (philosophy)\n3. Talk about life" };
   }
 
   if (!s.summary.problem) {

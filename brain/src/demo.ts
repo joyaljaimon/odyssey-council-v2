@@ -7,6 +7,7 @@ type Step = { wait: number; event?: StageEvent; say?: { who: CharacterId; text: 
 
 const script: Step[] = [
   { wait: 0, event: { type: "clear" } },
+  { wait: 1800, event: { type: "mode", mode: "life" } },
   { wait: 300, event: { type: "character", character: "athena" } },
   { wait: 300, say: { who: "athena", text: "I'm an AI playing Athena. Tell me, traveler, what storm are you sailing through?" } },
   { wait: 2500, event: { type: "caption", text: "You: I keep scrolling my phone instead of studying." } },
@@ -30,6 +31,7 @@ const script: Step[] = [
 // POST /debug/demo?sessionId=...&script=story : Odysseus tells the wooden horse in Story Mode.
 const story: Step[] = [
   { wait: 0, event: { type: "clear" } },
+  { wait: 1800, event: { type: "mode", mode: "philosophy" } },
   { wait: 300, event: { type: "character", character: "odysseus" } },
   { wait: 300, say: { who: "odysseus", text: "The wooden horse? Ah. Sit, and I'll tell you how Troy fell." } },
   { wait: 0, event: { type: "story_mode", active: true, title: "The Wooden Horse" } },
@@ -58,6 +60,7 @@ const story: Step[] = [
 // &script=council : Athena alone, then the screen comes up with the gods' viewpoints on a question.
 const council: Step[] = [
   { wait: 0, event: { type: "clear" } },
+  { wait: 1800, event: { type: "mode", mode: "philosophy" } },
   { wait: 300, event: { type: "character", character: "athena" } },
   { wait: 300, say: { who: "athena", text: "I'm an AI playing Athena. What would you like to explore today?" } },
   { wait: 1500, event: { type: "caption", text: "You: Why did Odysseus shout his name at the Cyclops? Wasn't he supposed to be clever?" } },
@@ -82,6 +85,7 @@ const cyclopsTaunt = {
 };
 const adventureScript: Step[] = [
   { wait: 0, event: { type: "clear" } },
+  { wait: 1800, event: { type: "mode", mode: "odysseus" } },
   { wait: 300, event: { type: "character", character: "athena" } },
   { wait: 200, event: { type: "adventure", adventure: { ...cyclopsTaunt, stats: { crew: 58, wrath: 2, favor: 7 } } } },
   { wait: 200, say: { who: "athena", text: "You are Odysseus now. The giant is blind and raging on the cliff. A, B or C?" } },

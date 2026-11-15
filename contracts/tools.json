@@ -1,6 +1,27 @@
 {
-  "_comment": "contract version: 4. Function declarations Brain registers with Gemini.",
+  "_comment": "contract version: 5. Function declarations Brain registers with Gemini.",
   "tools": [
+    {
+      "name": "choose_mode",
+      "description": "Switch the app to one of the three modes when the user picks one, or back to the start menu. 'odysseus' = Be Odysseus; 'philosophy' = the Council: the gods debate the Odyssey's ideas and explain the story; 'life' = talk about the user's own life through the Odyssey; 'menu' = back to the three choices.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "odysseus",
+              "philosophy",
+              "life",
+              "menu"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      }
+    },
     {
       "name": "search_odyssey",
       "description": "Search the Odyssey text and episode notes. Returns passages with ids like '12.14' (book.paragraph).",

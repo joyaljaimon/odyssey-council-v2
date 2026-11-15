@@ -1,6 +1,6 @@
 // Per-session memory (in process only, per the MVP: nothing is persisted).
 import type { Content } from "@google/genai";
-import type { CharacterId, SessionSummary } from "@odyssey/contracts";
+import type { AppMode, CharacterId, SessionSummary } from "@odyssey/contracts";
 import type { AdventureState } from "./adventure.ts";
 
 export type Session = {
@@ -12,6 +12,7 @@ export type Session = {
   summary: SessionSummary;
   story?: { momentId?: string }; // Story Mode on when set
   adventure?: AdventureState; // Be Odysseus in progress
+  mode?: AppMode; // undefined = the start menu
   lastActive: number;
 };
 

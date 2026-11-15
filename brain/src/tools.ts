@@ -1,12 +1,23 @@
 // Runs the tools declared in contracts/tools.json. Shared by text and voice mode.
 import type { FunctionDeclaration } from "@google/genai";
-import { GESTURES, type Attachment, type CharacterId, type Gesture, type StageEvent } from "@odyssey/contracts";
+import { APP_MODES, GESTURES, type AppMode, type Attachment, type CharacterId, type Gesture, type StageEvent } from "@odyssey/contracts";
 import toolsJson from "@odyssey/contracts/tools.json" with { type: "json" };
 import { episodes, findEpisodeSemantic, findMoment, getEpisode, getMoment, getPassage, illustrations, searchSemantic } from "@odyssey/story";
 import type { Session } from "./session.ts";
 import { choose, startAdventure } from "./adventure.ts";
 
 export const functionDeclarations = toolsJson.tools as unknown as FunctionDeclaration[];
+
+// Each mode only gets its own tools (the start menu only gets choose_mode), so the model stays on task.
+const MODE_TOOLS: Record<AppMode | "menu", string[]> = {
+  menu: ["choose_mode"],
+  life: ["choose_mode", "find_episode", "search_odyssey", "highlight_passage", "show_scene", "show_map", "gesture", "end_session"],
+  philosophy: ["choose_mode", "explain_idea", "find_moment", "set_story_mode", "show_illustration", "gesture", "highlight_passage",
+    "search_odyssey", "find_episode", "show_scene", "show_map", "switch_character", "start_debate", "end_session"],
+  odysseus: ["choose_mode", "start_adventure", "choose", "end_adventure", "highlight_passage", "gesture", "end_session"],
+};
+export const toolsFor = (mode: AppMode | undefined) =>
+  functionDeclarations.filter((f) => MODE_TOOLS[mode ?? "menu"].includes(f.name ?? ""));
 
 const CHARACTERS: CharacterId[] = ["athena", "odysseus", "poseidon", "circe"];
 const sceneIds = new Set(episodes.map((e) => e.sceneId));
@@ -26,15 +37,40 @@ export type ToolOutcome = {
   debateTopic?: string;
   ended?: boolean;
   later?: StageEvent[]; // shown a few seconds later on a call (e.g. the next decision after the outcome is told)
+  modeChanged?: boolean; // the prompt and tools must be rebuilt for the new mode
 };
 
 const GODS = ["athena", "poseidon", "zeus", "hermes", "helios", "circe", "calypso", "odysseus"];
+
+/** Switch mode: reset whatever the previous mode left on the stage, then announce the new one. */
+export function modeEvents(s: Session, mode: AppMode | undefined): StageEvent[] {
+  s.mode = mode;
+  if (mode !== "odysseus") s.adventure = undefined;
+  s.story = undefined;
+  return [
+    { type: "board", board: null },
+    { type: "adventure", adventure: null },
+    { type: "story_mode", active: false },
+    { type: "illustration", illustrationId: null },
+    { type: "gesture", character: s.character, gesture: "none" },
+    { type: "mode", mode: mode ?? null },
+  ];
+}
 
 export async function runTool(s: Session, name: string, args: Record<string, unknown>): Promise<ToolOutcome> {
   const out: ToolOutcome = { response: {}, events: [], attachments: [] };
   const str = (k: string) => String(args[k] ?? "").trim();
 
   switch (name) {
+    case "choose_mode": {
+      const m = str("mode");
+      const next = (APP_MODES as readonly string[]).includes(m) ? (m as AppMode) : undefined;
+      if (m !== "menu" && !next) { out.response = { ok: false, error: "mode must be odysseus, philosophy, life or menu" }; break; }
+      out.events.push(...modeEvents(s, next));
+      out.modeChanged = true;
+      out.response = { ok: true, mode: next ?? "menu", note: next ? `Now in ${next} mode: start it right away.` : "Back at the three choices: offer them again." };
+      break;
+    }
     case "find_episode": {
       const problem = str("problem");
       s.summary.problem ??= problem;

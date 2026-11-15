@@ -202,3 +202,46 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 .adv-ending-kicker { color: var(--gold); letter-spacing: .2em; text-transform: uppercase; font-size: 15px; }
 .adv-ending-title { font-size: 46px; color: var(--gold); margin: 6px 0 10px; animation: illPop 700ms both; }
 .adv-ending-summary { font-size: 19px; line-height: 1.4; }
+
+/* ------------------------------------------------ three modes */
+.stage { transition: background 900ms ease; }
+.stage.mode-odysseus { background: linear-gradient(180deg, var(--paper) 0%, #dfe8e6 100%); }
+.stage.mode-philosophy { background: radial-gradient(circle at 25% 45%, #f7e7b8 0%, var(--paper) 55%); }
+.stage.mode-life { background: linear-gradient(180deg, var(--paper) 0%, #f1dcc4 100%); }
+.stage.menu .text-panel { opacity: 0; pointer-events: none; }
+.stage.menu .visual { height: 586px; }
+.stage.menu .caption { display: none; }
+
+.menu-screen { position: absolute; inset: 0; padding: 26px 26px 22px; display: flex; flex-direction: column;
+  background: radial-gradient(circle at 50% 0%, #2c2016, var(--glaze) 75%); }
+.menu-kicker { color: var(--gold); letter-spacing: .22em; text-transform: uppercase; font-size: 18px; text-align: center; }
+.menu-cards { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
+.menu-card { position: relative; font: inherit; color: var(--ink); background: var(--paper); border: 4px solid var(--clay); border-radius: 18px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 20px 16px 16px; cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0,0,0,.45); animation: illPop 650ms cubic-bezier(.2,.9,.3,1.2) both; transition: transform 200ms, box-shadow 200ms; }
+.menu-card:hover { transform: translateY(-6px); box-shadow: 0 14px 40px rgba(0,0,0,.6); }
+.menu-num { position: absolute; left: 14px; top: 12px; width: 34px; height: 34px; border-radius: 50%; background: var(--clay); color: var(--paper);
+  font-weight: bold; font-size: 18px; display: grid; place-items: center; }
+.menu-plate { width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 50% 42%, #fbf4e6, var(--paper) 60%, var(--paper-2));
+  border: 6px solid var(--clay); display: grid; place-items: center; }
+.menu-plate img { width: 82%; height: 82%; object-fit: contain; }
+.menu-plate.big { width: 230px; height: 230px; flex: none; }
+.menu-title { font-size: 30px; color: var(--terracotta); font-weight: bold; margin-top: 4px; }
+.menu-blurb { font-size: 18px; line-height: 1.35; }
+.menu-say { margin-top: auto; font-size: 16px; font-style: italic; background: var(--glaze); color: var(--gold); padding: 5px 14px; border-radius: 20px; }
+
+.mode-intro { position: absolute; inset: 0; display: flex; align-items: center; gap: 34px; padding: 30px 40px;
+  background: radial-gradient(circle at 25% 50%, #2c2016, var(--glaze) 75%); }
+.mode-intro .menu-kicker { text-align: left; font-size: 22px; }
+.mode-intro-lines { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mode-intro-lines div { color: var(--paper); font-size: 24px; font-style: italic; animation: illSlide 500ms ease-out both; }
+.mode-intro-lines div:nth-child(2) { animation-delay: 150ms; } .mode-intro-lines div:nth-child(3) { animation-delay: 300ms; }
+
+.mode-pill { position: absolute; left: 40px; top: 34px; display: flex; flex-direction: column; gap: 2px; }
+.mode-pill b { background: var(--glaze); color: var(--gold); font-size: 16px; letter-spacing: .16em; text-transform: uppercase; padding: 5px 12px; border-radius: 4px; align-self: flex-start; }
+.mode-pill span { font-size: 13px; font-style: italic; opacity: .7; padding-left: 2px; }
+
+/* the Odyssey text only appears once a passage is quoted; until then the screen gets the full height */
+.stage.no-text .text-panel { opacity: 0; transform: translateY(30px); pointer-events: none; }
+.stage.no-text .visual, .stage.no-text .visual.story { height: 586px; }
+.stage.no-text .caption { top: 640px; }
