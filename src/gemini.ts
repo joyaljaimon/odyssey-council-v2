@@ -15,7 +15,7 @@ const API = "https://generativelanguage.googleapis.com/v1beta/models";
 const list = (v: string | undefined, d: string) => (v || d).split(",").map((s) => s.trim()).filter(Boolean);
 
 export const KEYS = list(process.env.GEMINI_API_KEYS, process.env.GEMINI_API_KEY ?? "");
-export const SCRIPT_MODELS = list(process.env.SCRIPT_MODELS, "gemini-3.1-flash-lite,gemini-flash-lite-latest,gemini-2.5-flash-lite,gemini-3.5-flash-lite,gemini-2.5-flash");
+export const SCRIPT_MODELS = list(process.env.SCRIPT_MODELS, "gemini-flash-lite-latest,gemini-3.1-flash-lite,gemini-3.5-flash,gemini-3.5-flash-lite");
 export const TTS_MODELS = list(process.env.TTS_MODELS, "gemini-3.8-flash-lite-tts,gemini-3.1-flash-tts-preview,gemini-3.8-flash-tts,gemini-2.5-flash-preview-tts");
 const FIRST_CHUNK_MS = Number(process.env.FIRST_CHUNK_MS ?? 3500); // healthy models answer in ~1 s; a stalled one costs at most this
 export const TTS_RATE = 24000; // Gemini TTS: PCM16 mono 24 kHz
@@ -95,8 +95,11 @@ export async function* streamText(
   signal?: AbortSignal,
 ): AsyncGenerator<string> {
   let lastErr: unknown;
+  let n = 0;
   for (const { key, model } of attempts(req.models ?? SCRIPT_MODELS)) {
     if (signal?.aborted) return;
+    // each fallback gets more time than the one before, so a busy minute can't make every model fail
+    const firstMs = Math.round((req.firstMs ?? FIRST_CHUNK_MS) * (1 + 0.6 * n++));
     const t0 = Date.now();
     let started = false;
     for (const withThinking of [true, false]) {
@@ -108,7 +111,7 @@ export async function* streamText(
           contents: req.contents,
           generationConfig: { temperature: req.temperature ?? 0.9, maxOutputTokens: req.maxTokens ?? 700, ...(think ? { thinkingConfig: think } : {}) },
         };
-        for await (const ev of sse(model, key, body, req.firstMs ?? FIRST_CHUNK_MS, signal)) {
+        for await (const ev of sse(model, key, body, firstMs, signal)) {
           const text = (ev.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
           if (!text) continue;
           if (!started) { started = true; console.log(`[gemini] script from ${model} (first token ${Date.now() - t0} ms)`); }
