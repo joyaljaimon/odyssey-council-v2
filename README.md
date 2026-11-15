@@ -1,84 +1,111 @@
-# Homer's Odyssey
+# The Odyssey Council
 
-> Every great solution begins with an Odyssey.
+> FaceTime the gods and heroes of Homer's Odyssey. Ask anything, or hold something up to the camera, and the
+> characters who were actually there answer, each in their own voice.
 
-Text or FaceTime a character from the Odyssey. On calls, the agent's video is a live "stage": a talking character,
-the text with the current passage highlighted, and scene images or maps.
+Ask *"Who's really to blame for the crew dying on the island of the Sun?"* and **Odysseus**, **Eurylochus**,
+**Helios** and **Zeus** convene on your screen and argue it out: Odysseus warned them, Eurylochus says starving men
+had no choice, Helios demanded vengeance, and Zeus reminds everyone that mortals blame the gods for their own folly.
 
-## Who owns what
+Hold up a bow to your camera and **Penelope** remembers the contest of the axes.
 
-| Role | Branch | Folder |
-| --- | --- | --- |
-| 1. Channel (Chert, FaceTime, iMessage) | `role/channel` | `channel/` |
-| 2. Brain (Gemini Live, characters) | `role/brain` | `brain/` |
-| 3. Story (text, episodes, retrieval) | `role/story` | `story/` |
-| 4. Experience (stage, art, demo) | `role/experience` | `stage/`, `assets/`, `demo/` |
-| Everyone (announce changes first) | any | `contracts/`, `.env.example`, this README |
+Built for HackUTA, *Best Use of FaceTime (Chert)*.
 
-Work on your branch, touch only your folder, and merge into `main` with a pull request.
+## The one feature
 
-## Run locally
+You call. You ask. The right members of the Council answer.
 
-Requires Node 20.6+.
+- **It listens and looks at once.** Your question (audio) and your live FaceTime camera frame go to Gemini in a
+  single call. Show the Council an object and it becomes part of the story: a phone is the Sirens' song, a dog is
+  Argos, a cup is Circe's.
+- **It picks the cast.** The Cyclops? Odysseus, Polyphemus and Poseidon. The suitors? Penelope, Telemachus and
+  Antinous. 16 members, 2 to 4 speak per answer, and they disagree when their interests do.
+- **Every character has a voice and a face.** Each line streams into its own Gemini voice the moment it is written;
+  the video shows their oil portrait lit up, mouth moving, with the line as a subtitle and the episode's painting
+  behind.
+- **It knows the whole book.** The full Samuel Butler translation was distilled offline into a book-by-book codex
+  (`data/codex.md`), with 91 quotes verified word for word against the text.
+- **It stays on course.** Maths homework, code, news: Athena declines kindly and offers an Odyssey question instead.
+
+## How it uses FaceTime
+
+```
+iPhone FaceTime ──▶ Chert line ──▶ LiveKit room ──▶ this agent
+   your voice  ─────────────────────────────────▶  VAD ─┐
+   your camera ─────────────────────────────────▶  latest frame ─┤
+                                                         ▼
+                                     Gemini: audio + frame ─▶ streamed script
+                                     HEARD / SAW / TOPIC / SCENE / NAME: line
+                                                         ▼
+                                     Gemini TTS, one voice per character (streamed)
+   their voices ◀───────────────────────────────── 24 kHz audio track
+   the Council  ◀───────────────────────────────── 960×540 video, drawn in Node (canvas)
+```
+
+About **1.6 s** from the end of your question to the first voice (measured with `npm run e2e`).
+
+### Built to work every time
+
+- Several models per job and several API keys (`GEMINI_API_KEYS=a,b,c`); a model that is overloaded (503) or out of
+  quota (429) is skipped and the next answers. Each attempt must start within seconds or the next one is tried.
+- If every Gemini voice fails, the line is spoken with the Mac's own voice; if the script fails, Athena covers with
+  a pre-recorded line. The greeting is pre-recorded, so Chert's 10-second greeting deadline is always met.
+- One process, no browser: the video is drawn straight to pixels.
+
+## Run it
+
+Node 22 or 24 (Chert's CLI rejects 25).
 
 ```bash
 npm install
-cp .env.example .env          # fill in keys
-npm run dev:brain             # :8080
-npm run dev:stage             # :3000 -> open http://localhost:3000/stage?sessionId=demo&debug=1
-npm run dev:channel           # :8081
+cp .env.example .env               # GEMINI_API_KEY, plus the LiveKit keys from `chert setup`
+npm run ask -- "Was Odysseus right to blind the Cyclops?"   # text test, no phone
+npm run sim                        # http://localhost:8790: call from the browser with your mic + camera
 ```
 
-Smoke test (with brain + stage running):
+On a real FaceTime call (two terminals):
 
 ```bash
-# Text path (what Channel does for iMessage)
-curl -s localhost:8080/text -H 'content-type: application/json' \
-  -d '{"sessionId":"demo","from":"+10000000000","message":"I keep scrolling my phone instead of studying","channel":"imessage"}'
-
-# Push a stage event by hand
-curl -s "localhost:8080/debug/emit?sessionId=demo" -H 'content-type: application/json' \
-  -d '{"type":"highlight","passageIds":["12.1"]}'
+npm start                                                                   # the agent
+npx @trychert/facetime@0.1.0-beta.21 dev --agent odyssey-council --env-file .env   # connects the line
 ```
 
-## Three modes
+Then FaceTime **Video** the line.
 
-Every call or chat starts at a menu: the god, and three cards on the screen (clickable on the web stage; on a call or
-over text, just say which):
-
-| Mode | What happens on the screen |
+| Command | What it does |
 | --- | --- |
-| **Be Odysseus** | You make Odysseus' choices at nine moments of the voyage (A/B/C). Crew, Poseidon's wrath and Athena's favour change; after each pick you see what Homer's Odysseus did, with the real quote; at the end you get a title. |
-| **The Council** | Philosophy and the story, explained by the gods: a board with the idea, its emblem and 2-3 gods' viewpoints; Story Mode for "tell me about…" (illustrations, gestures, highlighted passages); a debate between gods. |
-| **Talk about life** | Your own problem: the matching episode's scene, map and key passage, and a "Your Ithaca" takeaway card. |
+| `npm start` | The FaceTime agent (registers with LiveKit, or polls `chert dev` on Chert rooms) |
+| `npm run sim` | Browser stand-in for a call: same Council, your mic and camera |
+| `npm run ask -- "…" [--image x.jpg] [--speak]` | One Council turn in the terminal |
+| `npm run e2e -- "…"` | A spoken question end to end; reports latency, saves reply audio and stage frames |
+| `npm run codex` | Rebuilds `data/codex.md` from the full text (verifies every quote) |
+| `npm run portraits` | Paints missing portraits (Meta Muse Image) |
 
-Say "menu" (or tap) to switch. Each mode gives the model only its own instructions and tools. Guardrails: characters
-only discuss the Odyssey, Greek myth, its ideas and your life through it; text also pre-filters obvious off-topic
-requests (`brain/src/guardrails.ts`). Demos without Gemini:
-`curl -X POST "localhost:8080/debug/demo?sessionId=demo&script=adventure"` (or `council`, `story`).
+## Code
 
-## Character styles and Story Mode
+| File | |
+| --- | --- |
+| [src/council.ts](src/council.ts) | A call: listen, one Gemini turn, speak each line, keep the stage in sync with the audio |
+| [src/script.ts](src/script.ts) | The prompt, the guardrails, and the streaming line parser |
+| [src/gemini.ts](src/gemini.ts) | Streaming text and speech with key/model fallback; the `say` fallback |
+| [src/stage.ts](src/stage.ts) | The video: portraits, subtitles, painting, what the camera saw |
+| [src/bridge.ts](src/bridge.ts) | LiveKit room ↔ Council (caller audio + camera in, voice + video out) |
+| [src/chert.ts](src/chert.ts) | Takes calls from the Chert line |
+| [src/roster.ts](src/roster.ts) | The 16 members: who they are, their voices |
 
-- **Character styles:** open `http://localhost:3000/characters` to compare five styles (red-figure, black-figure,
-  marble, Minoan fresco, storybook), talking and gesturing. Switch with
-  `npm run art -w stage -- --use <style> --only characters` (saved in `assets/characters/style.json`).
-- **Story Mode:** ask any character to tell part of the story ("Odysseus, what was it like inside the wooden horse?").
-  They narrate it in beats, each with a large illustration, a hand gesture and the passage highlighted. Moments live in
-  `story/data/moments.json`, illustrations in `assets/illustrations/`. Try it without Gemini:
-  `curl -X POST "localhost:8080/debug/demo?sessionId=demo&script=story"`.
+## The journey
 
-## Daily git loop
+The first version (kept alive at [joyaljaimon/odyssey-council](https://github.com/joyaljaimon/odyssey-council),
+history preserved here) had three modes: *Be Odysseus* (a choose-your-path game), *Talk about life* (advice from
+one god), and *The Council*. Four people, four packages, four processes, a headless Chrome filming a Next.js page
+for the video, and a Gemini Live session torn down and reopened every time a different character spoke.
 
-```bash
-git add <your-folder>
-git commit -m "brain: add highlight_passage tool"
-git fetch origin && git rebase origin/main
-git push --force-with-lease
-# then open a PR from your branch into main
-```
+It worked, but it was slow and fragile, and the best moment of every demo was the same one: several characters
+answering one question from their own side of the story. So v2 is only that, rebuilt around what makes FaceTime
+different from a phone call: the Council sees what you show it.
 
-## Contracts
+## Credits
 
-`contracts/types.ts` (API, socket and data shapes) and `contracts/tools.json` (Gemini tool declarations)
-are shared. Announce changes in the team chat and bump `contract version` before merging.
-
+The Odyssey, translated by Samuel Butler (1900, public domain, Project Gutenberg). Portraits and paintings generated
+with Meta Muse Image. Fonts: Cinzel and EB Garamond (SIL Open Font License, `assets/fonts/`). The characters are AI and
+say so; calls are not recorded.

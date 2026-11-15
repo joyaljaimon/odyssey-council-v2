@@ -1,18 +1,30 @@
 {
-  "name": "homers-odyssey",
+  "name": "odyssey-council",
+  "version": "2.0.0",
   "private": true,
-  "workspaces": [
-    "contracts",
-    "story",
-    "brain",
-    "channel",
-    "stage"
-  ],
+  "type": "module",
+  "description": "FaceTime the gods and heroes of Homer's Odyssey. Ask anything; the characters who were there answer, each in their own voice.",
+  "engines": { "node": ">=22 <25 || ^26" },
   "scripts": {
-    "dev:brain": "npm run dev -w brain",
-    "dev:channel": "npm run dev -w channel",
-    "dev:stage": "npm run dev -w stage",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "serve:stage": "npm run serve -w stage"
+    "start": "tsx --env-file-if-exists=.env src/chert.ts start",
+    "sim": "tsx --env-file-if-exists=.env src/sim.ts",
+    "ask": "tsx --env-file-if-exists=.env src/ask.ts",
+    "codex": "tsx --env-file-if-exists=.env tools/build-codex.ts",
+    "e2e": "tsx --env-file-if-exists=.env tools/e2e.ts",
+    "portraits": "tsx --env-file-if-exists=.env tools/build-portraits.ts",
+    "stage:png": "tsx --env-file-if-exists=.env tools/stage-png.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@livekit/agents": "1.9.4",
+    "@livekit/rtc-node": "1.2.1",
+    "@napi-rs/canvas": "1.0.13",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
   }
 }
