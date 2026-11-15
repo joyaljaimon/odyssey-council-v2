@@ -11,7 +11,7 @@ import { CHAIR, type Member } from "./roster.ts";
 import { SAY_AUDIO, TTS_RATE, speak } from "./gemini.ts";
 import { FALLBACK_LINE, councilTurn, type Turn } from "./script.ts";
 import { Stage, imageFromJpeg, type StageState } from "./stage.ts";
-import { Vad } from "./vad.ts";
+import { BargeIn, Vad } from "./vad.ts";
 
 export interface CallIO {
   /** Play PCM16 mono 24 kHz after whatever is already queued. */
@@ -22,7 +22,15 @@ export interface CallIO {
 
 const BYTES_PER_MS = (TTS_RATE * 2) / 1000;
 const MOUTH_STEP_MS = 50;
-const BARGE_IN = process.env.BARGE_IN === "1";
+const BARGE_IN = process.env.BARGE_IN !== "0"; // the caller can talk over the Council to stop it (BARGE_IN=0 turns it off)
+const RECENT_MS = 1200; // caller audio kept so an interruption's first words are part of the next question
+/** "stop", "wait", "okay stop, stop please"…: the caller only wants silence, not an answer. */
+const HUSH_WORDS = new Set("stop wait pause hold hang on shh shhh quiet enough one sec second be talking please ok okay okey council guys everyone sorry hey hmm um uh".split(" "));
+const HUSH_KEY = /\b(stop|wait|pause|hold on|hang on|shh+|quiet|enough)\b/i;
+const isHush = (text: string) => {
+  const words = text.toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter(Boolean);
+  return words.length > 0 && words.length <= 10 && HUSH_KEY.test(text) && words.every((w) => HUSH_WORDS.has(w));
+};
 const GREETING = `Welcome, traveller. I'm Athena, well, an AI playing her. The Council of the Odyssey is in session: ask us anything about the voyage, or hold something up to the camera.`;
 
 type Due = { at: number; apply: () => void };
@@ -30,6 +38,10 @@ type Due = { at: number; apply: () => void };
 export class Council {
   readonly stage = new Stage();
   private vad: Vad;
+  private barge: BargeIn;
+  private recent: Buffer[] = [];
+  private recentBytes = 0;
+  private inputRate: number;
   private history: Turn[] = [];
   private playhead = 0; // when the audio queued so far finishes playing (ms epoch)
   private due: Due[] = [];
@@ -42,6 +54,8 @@ export class Council {
 
   constructor(readonly id: string, private io: CallIO, inputRate = 16000) {
     this.vad = new Vad(inputRate);
+    this.barge = new BargeIn(inputRate);
+    this.inputRate = inputRate;
     this.tick = setInterval(() => this.onTick(), 40);
   }
 
@@ -63,15 +77,26 @@ export class Council {
   /** Caller audio, PCM16 mono at the input rate. */
   callerAudio(pcm: Buffer) {
     if (this.closed) return;
+    this.remember(pcm);
+    if (this.busy) {
+      // While the Council talks, only a clear, sustained voice counts (see BargeIn), and only once it is audible.
+      if (BARGE_IN && this.stage.state.phase === "speaking" && this.barge.push(pcm)) this.interrupt();
+      else this.stage.state.mic = 0;
+      return;
+    }
     const ev = this.vad.push(pcm);
     this.stage.state.mic = this.vad.level;
-    if (this.busy) {
-      if (BARGE_IN && ev === "start" && this.stage.state.phase === "speaking") this.interrupt();
-      else { if (ev) this.vad.reset(); return; }
-    }
     if (ev === "start") this.stage.set({ phase: "hearing" });
     else if (ev === "cancel") this.stage.set({ phase: "listening" });
     else if (ev instanceof Buffer) void this.turn(ev);
+  }
+
+  /** Keep the last ~1.2 s of caller audio. */
+  private remember(pcm: Buffer) {
+    this.recent.push(pcm);
+    this.recentBytes += pcm.length;
+    const max = (this.inputRate / 1000) * RECENT_MS * 2;
+    while (this.recentBytes - this.recent[0].length > max) this.recentBytes -= this.recent.shift()!.length;
   }
 
   close() {
@@ -99,6 +124,7 @@ export class Council {
           heard = ev.text;
           console.log(`[council ${this.id}] heard: "${heard}" (${Date.now() - t0} ms)`);
           if (heard === "-" || !heard) break; // no clear speech: back to listening, quietly
+          if (isHush(heard)) { console.log(`[council ${this.id}] the caller asked for quiet`); heard = "-"; break; }
           this.stage.set({ heard });
         } else if (ev.kind === "saw" && frame) {
           const img = await imageFromJpeg(frame);
@@ -141,15 +167,21 @@ export class Council {
     });
   }
 
+  /** The caller talked over the Council: stop speaking at once, drop the rest of the answer, and listen. */
   private interrupt() {
-    console.log(`[council ${this.id}] caller interrupted`);
+    console.log(`[council ${this.id}] caller interrupted; stopping`);
     this.abort?.abort();
+    this.abort = null;
     this.io.clearAudio();
     this.due = [];
     this.mouth = [];
     this.playhead = Date.now();
     this.busy = false;
     this.stage.set({ phase: "hearing", speaker: undefined, line: undefined, mouth: 0 });
+    // Start the next question from what the caller has already said, so its first words are not lost.
+    this.vad.reset();
+    const ev = this.vad.push(Buffer.concat(this.recent));
+    if (ev instanceof Buffer) void this.turn(ev);
   }
 
   /** Speak one line in a member's voice. The stage switches to them exactly when their audio starts playing. */
@@ -160,6 +192,7 @@ export class Council {
       started = true;
       this.at(this.playhead, () => {
         const seats = newSeats ? [m.id] : this.stage.state.seats.includes(m.id) ? this.stage.state.seats : [...this.stage.state.seats, m.id];
+        if (this.stage.state.phase !== "speaking") this.barge.arm();
         this.stage.set({ phase: "speaking", speaker: m.id, line: text, seats });
       });
     };

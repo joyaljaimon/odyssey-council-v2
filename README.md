@@ -25,6 +25,8 @@ You call. You ask. The right members of the Council answer.
   behind.
 - **It knows the whole book.** The full Samuel Butler translation was distilled offline into a book-by-book codex
   (`data/codex.md`), with 91 quotes verified word for word against the text.
+- **You can cut in.** Talk over the Council and it stops at once and takes your new question; say "stop" or "wait"
+  and it just goes quiet. A cough, an "mm" or its own echo doesn't count.
 - **It stays on course.** Maths homework, code, news: Athena declines kindly and offers an Odyssey question instead.
 
 ## How it uses FaceTime
@@ -77,6 +79,7 @@ Then FaceTime **Video** the line.
 | `npm start` | The FaceTime agent (registers with LiveKit, or polls `chert dev` on Chert rooms) |
 | `npm run sim` | Browser stand-in for a call: same Council, your mic and camera |
 | `npm run ask -- "…" [--image x.jpg] [--speak]` | One Council turn in the terminal |
+| `npx tsx --env-file=.env tools/barge-test.ts` | Interruptions in real time: echo and a cough ignored, talking over it stops it, "stop" goes quiet |
 | `npm run e2e -- "…"` | A spoken question end to end; reports latency, saves reply audio and stage frames |
 | `npm run codex` | Rebuilds `data/codex.md` from the full text (verifies every quote) |
 | `npm run portraits` | Paints missing portraits (Meta Muse Image) |
