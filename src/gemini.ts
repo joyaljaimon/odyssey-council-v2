@@ -17,7 +17,8 @@ const list = (v: string | undefined, d: string) => (v || d).split(",").map((s) =
 export const KEYS = list(process.env.GEMINI_API_KEYS, process.env.GEMINI_API_KEY ?? "");
 export const SCRIPT_MODELS = list(process.env.SCRIPT_MODELS, "gemini-flash-lite-latest,gemini-3.1-flash-lite,gemini-3.5-flash,gemini-3.5-flash-lite");
 export const TTS_MODELS = list(process.env.TTS_MODELS, "gemini-3.8-flash-lite-tts,gemini-3.1-flash-tts-preview,gemini-3.8-flash-tts,gemini-2.5-flash-preview-tts");
-const FIRST_CHUNK_MS = Number(process.env.FIRST_CHUNK_MS ?? 3500); // healthy models answer in ~1 s; a stalled one costs at most this
+const FIRST_CHUNK_MS = Number(process.env.FIRST_CHUNK_MS ?? 9000); // a model with no text after this long is given up on
+const HEDGE_MS = Number(process.env.HEDGE_MS ?? 2500); // no text yet after this long: start the next model alongside
 export const TTS_RATE = 24000; // Gemini TTS: PCM16 mono 24 kHz
 
 // ---------------------------------------------------------------- key/model health
@@ -94,42 +95,90 @@ export async function* streamText(
   req: { system: string; contents: unknown[]; temperature?: number; maxTokens?: number; models?: string[]; firstMs?: number },
   signal?: AbortSignal,
 ): AsyncGenerator<string> {
-  let lastErr: unknown;
-  let n = 0;
-  for (const { key, model } of attempts(req.models ?? SCRIPT_MODELS)) {
-    if (signal?.aborted) return;
-    // each fallback gets more time than the one before, so a busy minute can't make every model fail
-    const firstMs = Math.round((req.firstMs ?? FIRST_CHUNK_MS) * (1 + 0.6 * n++));
-    const t0 = Date.now();
-    let started = false;
-    for (const withThinking of [true, false]) {
-      const think = withThinking ? thinking(model) : undefined;
-      if (!withThinking && !thinking(model)) break;
+  // Hedged: the first model starts; if it hasn't produced text within HEDGE_MS (or fails), the next one starts too,
+  // and so on. The first to produce text wins and the others are cancelled. A slow spell costs a few seconds, not
+  // the whole answer.
+  const list = attempts(req.models ?? SCRIPT_MODELS);
+  if (!list.length) throw new Error("no Gemini key configured");
+  const firstMs = req.firstMs ?? FIRST_CHUNK_MS;
+  const chunks: string[] = [];
+  let winner = -1, running = 0, next = 0, done = false, lastErr: unknown;
+  let wake: (() => void) | null = null;
+  const poke = () => { const w = wake; wake = null; w?.(); };
+  const ctrls: AbortController[] = [];
+  const onAbort = () => { for (const c of ctrls) c.abort(); poke(); };
+  signal?.addEventListener("abort", onAbort);
+
+  const launch = () => {
+    if (winner >= 0 || next >= list.length || signal?.aborted) return;
+    const i = next++;
+    const { key, model } = list[i];
+    const ctrl = new AbortController();
+    ctrls[i] = ctrl;
+    running++;
+    const hedge = setTimeout(launch, HEDGE_MS); // still nothing from this one: start the next alongside
+    void (async () => {
+      const t0 = Date.now();
+      let started = false;
       try {
-        const body = {
-          systemInstruction: { parts: [{ text: req.system }] },
-          contents: req.contents,
-          generationConfig: { temperature: req.temperature ?? 0.9, maxOutputTokens: req.maxTokens ?? 700, ...(think ? { thinkingConfig: think } : {}) },
-        };
-        for await (const ev of sse(model, key, body, firstMs, signal)) {
-          const text = (ev.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
-          if (!text) continue;
-          if (!started) { started = true; console.log(`[gemini] script from ${model} (first token ${Date.now() - t0} ms)`); }
-          yield text;
+        for (const withThinking of [true, false]) {
+          const think = withThinking ? thinking(model) : undefined;
+          if (!withThinking && !thinking(model)) break;
+          try {
+            const body = {
+              systemInstruction: { parts: [{ text: req.system }] },
+              contents: req.contents,
+              generationConfig: { temperature: req.temperature ?? 0.9, maxOutputTokens: req.maxTokens ?? 700, ...(think ? { thinkingConfig: think } : {}) },
+            };
+            for await (const ev of sse(model, key, body, firstMs, ctrl.signal)) {
+              const text = (ev.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
+              if (!text) continue;
+              if (!started) {
+                started = true;
+                clearTimeout(hedge);
+                if (winner >= 0) { ctrl.abort(); return; } // another model already won
+                winner = i;
+                ctrls.forEach((c, j) => { if (j !== i) c?.abort(); });
+                console.log(`[gemini] script from ${model} (first token ${Date.now() - t0} ms)`);
+              }
+              chunks.push(text); poke();
+            }
+            if (started) return;
+            throw new HttpError(500, "empty response");
+          } catch (err) {
+            if (started) { console.warn(`[gemini] ${model} stopped mid-answer: ${(err as Error).message}`); return; }
+            if (statusOf(err) === 400 && withThinking && thinking(model)) continue; // retry without thinkingConfig
+            throw err;
+          }
         }
-        if (started) return;
-        throw new HttpError(500, "empty response");
       } catch (err) {
-        if (started) { console.warn(`[gemini] ${model} stopped mid-answer: ${(err as Error).message}`); return; }
+        clearTimeout(hedge);
+        if (winner >= 0 && winner !== i) return; // cancelled because another model won
+        if (signal?.aborted) return;
         lastErr = err;
-        if (statusOf(err) === 400 && withThinking && thinking(model)) continue; // retry this model without thinkingConfig
         markDown(key, model, statusOf(err));
         console.warn(`[gemini] ${model} unavailable (${(err as Error).name === "AbortError" ? "timeout" : (err as Error).message.slice(0, 90)})`);
-        break;
+        launch(); // failed outright: the next starts now
+      } finally {
+        running--;
+        if (winner === i || (winner < 0 && running === 0 && next >= list.length)) done = true;
+        poke();
       }
+    })();
+  };
+
+  try {
+    launch();
+    while (true) {
+      if (chunks.length) { yield chunks.shift()!; continue; }
+      if (done || signal?.aborted) break;
+      await new Promise<void>((r) => { wake = r; });
     }
+    if (winner < 0 && !signal?.aborted) throw lastErr ?? new Error("every Gemini model failed");
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+    for (const c of ctrls) c?.abort();
   }
-  throw lastErr ?? new Error("no Gemini key configured");
 }
 
 // ---------------------------------------------------------------- speech
