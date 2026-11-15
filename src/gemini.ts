@@ -26,8 +26,9 @@ const downUntil = new Map<string, number>();
 const slot = (key: string, model: string) => `${key.slice(-6)}:${model}`;
 const isUp = (key: string, model: string) => (downUntil.get(slot(key, model)) ?? 0) < Date.now();
 function markDown(key: string, model: string, status: number) {
-  // Quota: a minute for per-minute limits. Overload or timeout: 20 s. Bad request / not found: 10 min.
-  const ms = status === 429 ? 60_000 : status === 400 || status === 404 || status === 403 ? 600_000 : 20_000;
+  // Quota: a minute for per-minute limits. Overload (5xx): 20 s. A stall (timeout, status 0): 2 min, so the next
+  // question doesn't wait on it again. Bad request / not found: 10 min.
+  const ms = status === 429 ? 60_000 : status === 400 || status === 404 || status === 403 ? 600_000 : status === 0 ? 120_000 : 20_000;
   downUntil.set(slot(key, model), Date.now() + ms);
 }
 
