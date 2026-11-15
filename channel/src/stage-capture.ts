@@ -6,15 +6,17 @@ import { Worker } from "node:worker_threads";
 import { chromium } from "playwright";
 
 const STAGE_URL = process.env.STAGE_URL ?? "http://localhost:3000";
-// The stage is laid out at 1280x720 but rendered at 0.75 scale: 960x540 frames are about half the pixels to paint,
-// decode and send, and FaceTime shows them at the same size on a phone.
-const LAYOUT_WIDTH = 1280, LAYOUT_HEIGHT = 720;
+// The stage is rendered at 0.75 scale (portrait 720x1280 -> 540x960 frames; landscape 1280x720 -> 960x540): about
+// half the pixels to paint, decode and send, at the same apparent size on a phone.
+// STAGE_ORIENTATION=portrait (default: fills an upright phone in FaceTime) or landscape.
+export const ORIENTATION = process.env.STAGE_ORIENTATION === "landscape" ? "landscape" : "portrait";
+const [LAYOUT_WIDTH, LAYOUT_HEIGHT] = ORIENTATION === "portrait" ? [720, 1280] : [1280, 720];
 const SCALE = Number(process.env.STAGE_SCALE ?? 0.75);
 export const VIDEO_WIDTH = Math.round(LAYOUT_WIDTH * SCALE);
 export const VIDEO_HEIGHT = Math.round(LAYOUT_HEIGHT * SCALE);
 
 export const stageUrl = (sessionId: string, base = STAGE_URL, capture = false) =>
-  `${base}/stage?sessionId=${encodeURIComponent(sessionId)}${capture ? "&capture=1" : ""}`;
+  `${base}/stage?sessionId=${encodeURIComponent(sessionId)}${capture ? `&capture=1&orient=${ORIENTATION}` : ""}`;
 
 export type RgbaFrame = { data: Uint8Array; width: number; height: number };
 

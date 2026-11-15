@@ -261,3 +261,74 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 .capture .map .pin i::after { animation: none; display: none; }
 .capture .stage, .capture .visual, .capture .text-panel, .capture .figure.solo { transition-duration: 250ms; }
 .visual .illustration, .visual .board, .visual .adventure, .visual .mode-intro, .visual .menu-screen, .visual .story-banner, .visual .tag { z-index: 2; }
+
+/* ================================================ PORTRAIT (720 x 1280): the screen on top, the god below it,
+   spoken words / the Odyssey text beside the god. Chosen by ?orient=portrait or an upright window. */
+.stage-viewport.portrait .stage { width: 720px; height: 1280px; }
+
+/* the screen panel */
+.stage-viewport.portrait .stage .visual,
+.stage-viewport.portrait .stage .visual.story,
+.stage-viewport.portrait .stage .visual.debate { left: 30px; top: 70px; width: 660px; height: 600px; }
+.stage-viewport.portrait .stage.no-text .visual,
+.stage-viewport.portrait .stage.no-text .visual.story { height: 640px; }
+.stage-viewport.portrait .stage.menu .visual { height: 630px; }
+
+/* the god: lower left; centred and large while the screen is closed */
+.stage-viewport.portrait .stage .figure.solo { left: 16px; top: 720px; width: 330px; height: 458px; }
+.stage-viewport.portrait .stage.idle .figure.solo { left: 140px; top: 300px; width: 440px; height: 611px; }
+.stage-viewport.portrait .stage .figure.debate-left { left: 16px; top: 740px; width: 320px; height: 444px; }
+.stage-viewport.portrait .stage .figure.debate-right { left: 384px; top: 740px; width: 320px; height: 444px; }
+.stage-viewport.portrait .nameplate { font-size: 24px; bottom: -40px; }
+
+/* beside the god: the passage being quoted, and below it what is being said */
+.stage-viewport.portrait .stage .text-panel,
+.stage-viewport.portrait .stage .text-panel.story,
+.stage-viewport.portrait .stage .text-panel.debate { left: 362px; top: 700px; width: 330px; height: 400px; }
+.stage-viewport.portrait .stage .text-panel.debate { display: none; }
+.stage-viewport.portrait .book-title { white-space: normal; font-size: 15px; }
+.stage-viewport.portrait .passages p { font-size: 19px; }
+.stage-viewport.portrait .stage .caption,
+.stage-viewport.portrait .stage .caption.debate { left: 362px; top: 1112px; width: 330px; height: 120px; font-size: 19px; -webkit-line-clamp: 5; }
+/* nothing quoted yet: the words being spoken get the whole column, large */
+.stage-viewport.portrait .stage.no-text .caption { top: 720px; height: 470px; font-size: 26px; line-height: 1.35; -webkit-line-clamp: 12; }
+.stage-viewport.portrait .stage .caption.debate { left: 30px; top: 690px; width: 660px; height: 44px; -webkit-line-clamp: 1; }
+.stage-viewport.portrait .stage.idle .caption { left: 60px; width: 600px; top: 960px; height: 220px; font-size: 26px; }
+.stage-viewport.portrait .stage.idle::before { left: 60px; top: 260px; width: 600px; height: 700px; }
+.stage-viewport.portrait .mode-pill { top: 30px; left: 30px; flex-direction: row; align-items: center; gap: 10px; }
+
+/* the start menu: three cards stacked */
+.stage-viewport.portrait .menu-screen { padding: 22px 20px; }
+.stage-viewport.portrait .menu-cards { grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+.stage-viewport.portrait .menu-card { flex-direction: row; text-align: left; align-items: center; gap: 18px; padding: 14px 18px; }
+.stage-viewport.portrait .menu-card .menu-plate { width: 130px; height: 130px; flex: none; }
+.stage-viewport.portrait .menu-title { font-size: 28px; margin: 0; }
+.stage-viewport.portrait .menu-blurb { font-size: 17px; }
+.stage-viewport.portrait .menu-say { position: absolute; right: 14px; bottom: 10px; font-size: 13px; padding: 3px 10px; }
+.stage-viewport.portrait .menu-card > .menu-title, .stage-viewport.portrait .menu-card > .menu-blurb { display: block; }
+.stage-viewport.portrait .menu-card { display: grid; grid-template-columns: 130px 1fr; grid-template-rows: auto auto 1fr; column-gap: 18px; row-gap: 4px; }
+.stage-viewport.portrait .menu-card .menu-plate { grid-row: 1 / span 3; }
+.stage-viewport.portrait .menu-num { left: 8px; top: 8px; width: 28px; height: 28px; font-size: 15px; z-index: 1; }
+.stage-viewport.portrait .mode-intro { flex-direction: column; justify-content: center; text-align: center; gap: 24px; }
+.stage-viewport.portrait .mode-intro .menu-kicker { text-align: center; }
+
+/* Council board: emblem on top, viewpoints below */
+.stage-viewport.portrait .board { grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 10px; padding: 18px 20px; align-items: start; }
+.stage-viewport.portrait .board-art .plate { width: 170px; height: 170px; }
+.stage-viewport.portrait .board-title { font-size: 28px; }
+.stage-viewport.portrait .viewpoint { font-size: 17px; }
+
+/* Be Odysseus: choices stacked */
+.stage-viewport.portrait .adv-top { flex-direction: column; }
+.stage-viewport.portrait .adv-stats { align-self: stretch; }
+.stage-viewport.portrait .meter { grid-template-columns: 140px 1fr 30px; }
+.stage-viewport.portrait .adv-scenario { font-size: 20px; max-width: none; }
+.stage-viewport.portrait .adv-choices { grid-template-columns: 1fr; gap: 8px; }
+.stage-viewport.portrait .adv-choice { font-size: 17px; padding: 8px 12px; }
+.stage-viewport.portrait .adv-ending-title { font-size: 40px; }
+
+/* Story Mode */
+.stage-viewport.portrait .illustration .plate { width: 320px; height: 320px; }
+
+/* the page on a phone: centred on the paper background, no black band */
+.stage-viewport.portrait { background: var(--paper); align-items: flex-start; }

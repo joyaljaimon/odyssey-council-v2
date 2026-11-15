@@ -142,9 +142,21 @@ export default function Stage() {
   }, [sessionId, apply]);
 
   // Fit the fixed 1280x720 stage to the window (it is exactly 1:1 in Channel's 1280x720 capture).
+  // Portrait (720x1280) or landscape (1280x720): ?orient=portrait|landscape, otherwise follow the window's shape
+  // (a phone held upright gets portrait, and it re-flows when you rotate).
+  const forced = params.get("orient");
+  const [portrait, setPortrait] = useState(forced === "portrait");
   const [scale, setScale] = useState(1);
+  const [offsetY, setOffsetY] = useState(0);
   useEffect(() => {
-    const fit = () => setScale(Math.min(window.innerWidth / 1280, window.innerHeight / 720));
+    const fit = () => {
+      const p = forced === "portrait" || (forced !== "landscape" && window.innerHeight > window.innerWidth);
+      setPortrait(p);
+      const [w, h] = p ? [720, 1280] : [1280, 720];
+      const sc = Math.min(window.innerWidth / w, window.innerHeight / h);
+      setScale(sc);
+      setOffsetY(Math.max(0, (window.innerHeight - h * sc) / 2)); // centre vertically when the window is taller
+    };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
@@ -154,8 +166,8 @@ export default function Stage() {
   const inDebate = !!debate && !!debate.left && !!debate.right;
 
   return (
-    <div className={`stage-viewport ${capture ? "capture" : ""}`}>
-      <div className={`stage ${screen ? "screen-open" : "idle"} ${mode ? `mode-${mode}` : "menu"} ${highlighted.length ? "" : "no-text"}`} style={{ transform: `scale(${scale})` }}>
+    <div className={`stage-viewport ${capture ? "capture" : ""} ${portrait ? "portrait" : "landscape"}`}>
+      <div className={`stage ${screen ? "screen-open" : "idle"} ${mode ? `mode-${mode}` : "menu"} ${highlighted.length ? "" : "no-text"}`} style={{ transform: `translateY(${offsetY}px) scale(${scale})` }}>
         <div className="meander top" />
         <div className="meander bottom" />
 
