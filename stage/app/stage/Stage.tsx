@@ -86,6 +86,10 @@ export default function Stage() {
     // Anything visual brings the screen up.
     if (["scene", "map", "highlight", "illustration"].includes(e.type) || (e.type === "story_mode" && e.active) ||
         (e.type === "board" && e.board) || (e.type === "adventure" && e.adventure) || (e.type === "character" && e.side)) setScreen(true);
+    // A board is drawn on top of the panel, so anything new for the panel replaces it (otherwise the next scene,
+    // story or picture would render underneath an old board and the screen would look stuck).
+    if (["scene", "map"].includes(e.type) || (e.type === "illustration" && e.illustrationId) || (e.type === "story_mode" && e.active) ||
+        (e.type === "adventure" && e.adventure)) setBoard(null);
     switch (e.type) {
       case "character":
         if (e.side) {

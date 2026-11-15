@@ -26,11 +26,11 @@ function remember(sessionId: string, e: StageEvent) {
       else snap.debate = undefined;
       snap.character = e;
       break;
-    case "scene": case "map": snap.visual = e; break;
+    case "scene": case "map": snap.visual = e; snap.board = undefined; break;
     case "highlight": snap.highlight = e; break;
     case "caption": snap.caption = e; break;
     case "story_mode": snap.story = e; if (!e.active) { snap.illustration = undefined; snap.gesture = undefined; } break;
-    case "illustration": snap.illustration = e.illustrationId ? e : undefined; break;
+    case "illustration": snap.illustration = e.illustrationId ? e : undefined; if (e.illustrationId) snap.board = undefined; break;
     case "gesture": snap.gesture = e.gesture === "none" ? undefined : e; break;
     case "screen": snap.screen = e; break;
     case "board": snap.board = e.board ? e : undefined; break;

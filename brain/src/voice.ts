@@ -187,6 +187,7 @@ class Call {
   private async onToolCall(calls: { id?: string; name?: string; args?: Record<string, unknown> }[]) {
     const functionResponses = [];
     for (const call of calls) {
+      console.log(`[voice ${this.s.id}] tool ${call.name} ${JSON.stringify(call.args ?? {}).slice(0, 160)}`);
       const out = await runTool(this.s, call.name ?? "", call.args ?? {});
       // Visuals land when the character reaches this point in its speech.
       for (const e of out.events) this.at(this.playhead, () => this.stage(e));

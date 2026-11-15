@@ -117,7 +117,7 @@ export async function runTool(s: Session, name: string, args: Record<string, unk
     case "show_scene": {
       const id = str("scene_id");
       if (!sceneIds.has(id)) { out.response = { ok: false, error: `unknown scene_id; use one of ${[...sceneIds].join(", ")}` }; break; }
-      out.events.push({ type: "scene", sceneId: id });
+      out.events.push({ type: "board", board: null }, { type: "scene", sceneId: id });
       const ep = episodes.find((e) => e.sceneId === id);
       out.attachments.push({ kind: "image", url: sceneUrl(id), alt: ep?.title ?? id });
       if (ep) s.summary.episodeId = ep.id;
@@ -184,7 +184,16 @@ export async function runTool(s: Session, name: string, args: Record<string, unk
       const active = args.active === true || args.active === "true";
       const moment = active ? getMoment(str("moment_id")) : undefined;
       s.story = active ? { momentId: moment?.id } : undefined;
-      out.events.push({ type: "story_mode", active, title: moment?.title });
+      out.events.push({ type: "board", board: null }, { type: "story_mode", active, title: moment?.title });
+      // Put the first beat up straight away, so the screen changes the moment the telling starts.
+      const first = moment?.beats[0];
+      if (active && first) {
+        out.events.push(
+          { type: "illustration", illustrationId: first.illustrationId, caption: first.caption, animation: "pop" },
+          { type: "gesture", character: s.character, gesture: first.gesture },
+          { type: "highlight", passageIds: first.passageIds },
+        );
+      }
       if (!active) out.events.push({ type: "illustration", illustrationId: null }, { type: "gesture", character: s.character, gesture: "none" });
       out.response = { ok: true, story_mode: active };
       break;
