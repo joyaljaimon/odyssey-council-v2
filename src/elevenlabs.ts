@@ -20,7 +20,7 @@ const WANT: Record<string, Want> = {
   telemachus: { gender: "male", age: "young", names: ["Will", "Liam", "Eric"] },
   circe: { gender: "female", age: "middle", names: ["Charlotte", "Jessica", "Alice"] },
   calypso: { gender: "female", age: "young", names: ["Lily", "Laura", "Aria"] },
-  polyphemus: { gender: "male", age: "middle", names: ["Clyde", "Callum", "Arnold"] },
+  polyphemus: { gender: "male", age: "middle", names: ["Brian", "Clyde", "Arnold"] },
   tiresias: { gender: "male", age: "old", names: ["Roger", "Bill", "Daniel"] },
   eurylochus: { gender: "male", age: "middle", names: ["Chris", "Eric", "Charlie"] },
   antinous: { gender: "male", age: "young", names: ["Eric", "Daniel", "Chris"] },
@@ -30,14 +30,34 @@ const WANT: Record<string, Want> = {
 };
 
 type Voice = { voice_id: string; name: string; labels?: Record<string, string> };
+// ElevenLabs' built-in default voices (same ids on every account). Used when the key can't list voices
+// (no voices_read permission) or the list fails.
+const DEFAULTS: Voice[] = ([
+  ["Alice", "Xb7hH8MSUJpSbSDYk0k2", "female", "middle"], ["Aria", "9BWtsMINqrJLrRacOk9x", "female", "middle"],
+  ["Bill", "pqHfZKP75CvOlQylNhV4", "male", "old"], ["Brian", "nPczCjzI2devNBz1zQrb", "male", "middle"],
+  ["Callum", "N2lVS1w4EtoT3dr4eOWO", "male", "middle"], ["Charlie", "IKne3meq5aSn9XLyUdCD", "male", "young"],
+  ["Charlotte", "XB0fDUnXU5powFXDhCwa", "female", "young"], ["Chris", "iP95p4xoKVk53GoZ742B", "male", "middle"],
+  ["Daniel", "onwK4e9ZLuTAKqWW03F9", "male", "middle"], ["Eric", "cjVigY5qzO86Huf0OWal", "male", "middle"],
+  ["George", "JBFqnCBsd6RMkjVDRZzb", "male", "middle"], ["Jessica", "cgSgspJ2msm6clMCkdW9", "female", "young"],
+  ["Laura", "FGY2WhTYpPnrIDTdsKH5", "female", "young"], ["Liam", "TX3LPaxmHKxFdv7VOQHJ", "male", "young"],
+  ["Lily", "pFZP5JQG7iQjIQuC4Bku", "female", "middle"], ["Matilda", "XrExE9yKIg1WjnnlVkGX", "female", "middle"],
+  ["Roger", "CwhRBWXzGAHq8TQ4Fs17", "male", "middle"], ["Sarah", "EXAVITQu4vr4xnSDxMaL", "female", "young"],
+  ["Will", "bIHbv24MWmeRgasZH58o", "male", "young"],
+] as const).map(([name, voice_id, gender, age]) => ({ name, voice_id, labels: { gender, age } }));
 let voices: Promise<Map<string, string>> | null = null;
 
 /** member id -> voice id, built once from the account's voices. */
 function voiceMap(): Promise<Map<string, string>> {
   voices ??= (async () => {
-    const res = await fetch(`${API}/voices`, { headers: { "xi-api-key": ELEVEN_KEY }, signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) throw new Error(`voices ${res.status}: ${(await res.text()).slice(0, 160)}`);
-    const list = ((await res.json()) as { voices: Voice[] }).voices;
+    let list = DEFAULTS;
+    try {
+      const res = await fetch(`${API}/voices`, { headers: { "xi-api-key": ELEVEN_KEY }, signal: AbortSignal.timeout(10_000) });
+      if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 120)}`);
+      const mine = ((await res.json()) as { voices: Voice[] }).voices;
+      if (mine.length) list = mine;
+    } catch (err) {
+      console.log(`[eleven] can't list this account's voices (${(err as Error).message.slice(0, 80)}); using the default voices`);
+    }
     const used = new Map<string, number>();
     const map = new Map<string, string>();
     const first = (n: string) => n.split(/[\s-]/)[0].toLowerCase();
@@ -50,7 +70,7 @@ function voiceMap(): Promise<Map<string, string>> {
         let s = nameRank >= 0 ? 100 - nameRank * 10 : 0;
         if (l.gender && l.gender.toLowerCase() === w.gender) s += 20; else if (l.gender) s -= 50;
         if (l.age && l.age.toLowerCase().includes(w.age)) s += 8;
-        return s - (used.get(v.voice_id) ?? 0) * 35; // spread the voices around
+        return s - (used.get(v.voice_id) ?? 0) * 200; // every member gets their own voice while any are left
       };
       const best = [...list].sort((a, b) => score(b) - score(a))[0];
       if (!best) continue;
