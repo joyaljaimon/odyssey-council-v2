@@ -16,7 +16,8 @@
     "portraits": "tsx --env-file-if-exists=.env tools/build-portraits.ts",
     "stage:png": "tsx --env-file-if-exists=.env tools/stage-png.ts",
     "typecheck": "tsc --noEmit",
-    "backdrop": "tsx --env-file-if-exists=.env tools/build-backdrop.ts"
+    "backdrop": "tsx --env-file-if-exists=.env tools/build-backdrop.ts",
+    "end-calls": "tsx --env-file-if-exists=.env tools/end-calls.ts"
   },
   "dependencies": {
     "@livekit/agents": "1.9.4",
