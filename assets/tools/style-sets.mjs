@@ -44,6 +44,11 @@ export const SCENES = {
 };
 
 const illustrations = read("../../story/data/illustrations.json");
+// Gentler wording where the story description trips the image model's content filter.
+const ILLUSTRATION_PROMPTS = {
+  "magic-cup": "An ornate golden drinking cup with a shimmering purple potion, swirls of magical mist rising from it, beside a slender golden wand",
+  ram: "A great woolly ram with curling horns, its thick fleece hanging low",
+};
 
 function jobsFor(style) {
   const jobs = [];
@@ -54,7 +59,7 @@ function jobsFor(style) {
   for (const [id, what] of Object.entries(SCENES))
     jobs.push({ style, out: `scenes/${id}.jpg`, max: 1280, kind: "generate", aspect: "16:9", prompt: `${what} Wide cinematic composition. ${NO_TEXT}`, reuse: id === "sirens" ? `${proposals}${style.id}/sirens.png` : null });
   for (const i of illustrations)
-    jobs.push({ style, out: `illustrations/${i.id}.jpg`, max: 720, kind: "generate", aspect: "1:1", prompt: `${i.description}: a single object or figure, centred and isolated on a plain, simple background, like an emblem. ${NO_TEXT}` });
+    jobs.push({ style, out: `illustrations/${i.id}.jpg`, max: 720, kind: "generate", aspect: "1:1", prompt: `${ILLUSTRATION_PROMPTS[i.id] ?? i.description}: a single object or figure, centred and isolated on a plain, simple background, like an emblem. ${NO_TEXT}` });
   return jobs;
 }
 

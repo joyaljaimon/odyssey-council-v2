@@ -364,8 +364,8 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 /* painted scenes and pictures fill their plates and panels */
 .stage-viewport:not(.style-vector) .illustration .plate img,
 .stage-viewport:not(.style-vector) .board-art .plate img,
-.stage-viewport:not(.style-vector) .menu-plate img,
-.stage-viewport:not(.style-vector) .viewpoint img { width: 100%; height: 100%; object-fit: cover; padding: 0; }
+.stage-viewport:not(.style-vector) .menu-plate img { width: 100%; height: 100%; object-fit: cover; padding: 0; }
+.stage-viewport:not(.style-vector) .viewpoint img { width: 46px; height: 46px; object-fit: cover; padding: 0; }
 .proposals .fine { font-size: 15px; opacity: .8; }
 .proposals .error { color: #a3442a; font-weight: bold; }
 .proposal-head button:disabled { background: transparent; color: var(--terracotta); cursor: default; }
