@@ -13,6 +13,7 @@ import { voiceTag } from "./elevenlabs.ts";
 import { FALLBACK_LINE, councilTurn, type Turn } from "./script.ts";
 import { Stage, imageFromJpeg, type StageState } from "./stage.ts";
 import { BargeIn, Vad } from "./vad.ts";
+import { VisionPicker } from "./visions.ts";
 
 export interface CallIO {
   /** Play PCM16 mono 24 kHz after whatever is already queued. */
@@ -38,6 +39,7 @@ type Due = { at: number; apply: () => void };
 
 export class Council {
   readonly stage = new Stage();
+  private visions = new VisionPicker();
   private vad: Vad;
   private barge: BargeIn;
   private recent: Buffer[] = [];
@@ -118,6 +120,7 @@ export class Council {
     let heard = "";
     const spoken: string[] = [];
     let first = true;
+    this.visions.beginTurn();
     try {
       for await (const ev of councilTurn({ audio: { pcm: audio, rate: 16000 }, frameJpeg: frame }, this.history, ctrl.signal)) {
         if (ctrl.signal.aborted) break;
@@ -137,6 +140,11 @@ export class Council {
         } else if (ev.kind === "scene") {
           const scene = ev.id;
           this.at(this.playhead, () => this.stage.set({ scene }));
+        } else if (ev.kind === "show") {
+          this.visions.suggest(ev.ids);
+        } else if (ev.kind === "new") {
+          console.log(`[council ${this.id}] painting something new: ${ev.subject}`);
+          this.visions.paintNew(ev.subject, () => this.stage.state.phase === "speaking", (v) => this.stage.showVision(v));
         } else if (ev.kind === "line") {
           if (!heard) heard = "…"; // the model skipped HEARD: still a real turn
           if (first) { first = false; console.log(`[council ${this.id}] first line ready in ${Date.now() - t0} ms`); }
@@ -165,6 +173,7 @@ export class Council {
       this.busy = false;
       this.vad.reset();
       this.stage.set({ phase: "listening", speaker: undefined, line: undefined, mouth: 0 });
+      this.stage.clearVisions();
     });
   }
 
@@ -179,6 +188,7 @@ export class Council {
     this.playhead = Date.now();
     this.busy = false;
     this.stage.set({ phase: "hearing", speaker: undefined, line: undefined, mouth: 0 });
+    this.stage.clearVisions();
     // Start the next question from what the caller has already said, so its first words are not lost.
     this.vad.reset();
     const ev = this.vad.push(Buffer.concat(this.recent));
@@ -195,6 +205,7 @@ export class Council {
         const seats = newSeats ? [m.id] : this.stage.state.seats.includes(m.id) ? this.stage.state.seats : [...this.stage.state.seats, m.id];
         if (this.stage.state.phase !== "speaking") this.barge.arm();
         this.stage.set({ phase: "speaking", speaker: m.id, line: text, seats });
+        if (!cacheKey) { const v = this.visions.forLine(text); if (v) this.stage.showVision(v); } // a picture of what this line mentions
       });
     };
     for await (const pcm of cachedSpeech(m, text, cacheKey, signal)) {

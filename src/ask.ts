@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { councilTurn } from "./script.ts";
 import { speak, toWav, TTS_RATE } from "./gemini.ts";
+import { VisionPicker } from "./visions.ts";
 
 const args = process.argv.slice(2);
 const img = args.includes("--image") ? readFileSync(args[args.indexOf("--image") + 1]) : null;
@@ -13,10 +14,14 @@ const say = args.includes("--speak");
 const question = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--image").join(" ") || "Was Odysseus right to blind the Cyclops?";
 
 const t0 = Date.now();
+const pictures = new VisionPicker();
+pictures.beginTurn();
 for await (const ev of councilTurn({ text: `The caller says: "${question}"`, frameJpeg: img }, [])) {
   const ms = `${String(Date.now() - t0).padStart(5)} ms`;
   if (ev.kind === "line") {
     console.log(`${ms}  ${ev.member.name.toUpperCase()}: ${ev.text}`);
+    const pic = pictures.forLine(ev.text);
+    if (pic) console.log(`           (on screen: ${pic.id})`);
     if (say) {
       const parts: Buffer[] = [];
       for await (const pcm of speak(ev.text, ev.member)) parts.push(pcm);
@@ -24,5 +29,6 @@ for await (const ev of councilTurn({ text: `The caller says: "${question}"`, fra
       writeFileSync(f, toWav(Buffer.concat(parts), TTS_RATE));
       execFileSync("afplay", [f]);
     }
-  } else console.log(`${ms}  [${ev.kind}] ${"text" in ev ? ev.text : ev.id}`);
+  } else if (ev.kind === "show") { pictures.suggest(ev.ids); console.log(`${ms}  [show] ${ev.ids.join(", ")}`); }
+  else console.log(`${ms}  [${ev.kind}] ${"text" in ev ? ev.text : "subject" in ev ? ev.subject : ev.id}`);
 }

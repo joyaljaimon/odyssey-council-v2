@@ -23,6 +23,11 @@ You call. You ask. The right members of the Council answer.
 - **Every character has a voice and a face.** Each line streams into its own Gemini voice the moment it is written;
   the video shows their oil portrait lit up, mouth moving, with the line as a subtitle and the episode's painting
   behind.
+- **It shows you what they're talking about.** A library of 64 paintings (the wooden horse, the loom, Argos, the
+  bag of winds…) drifts onto the stage beside the speakers at the moment a line mentions it: it blooms from ink into
+  colour, pans slowly and fades when the next one arrives. Each showing is framed and cropped differently, nothing
+  repeats until ten others have been shown, and when the answer needs something the library lacks (Agamemnon in the
+  net), a brand-new painting is made on the spot and joins the library.
 - **It knows the whole book.** The full Samuel Butler translation was distilled offline into a book-by-book codex
   (`data/codex.md`), with 91 quotes verified word for word against the text.
 - **You can cut in.** Talk over the Council and it stops at once and takes your new question; say "stop" or "wait"
@@ -83,6 +88,8 @@ Then FaceTime **Video** the line.
 | `npm run e2e -- "…"` | A spoken question end to end; reports latency, saves reply audio and stage frames |
 | `npm run codex` | Rebuilds `data/codex.md` from the full text (verifies every quote) |
 | `npm run portraits` | Paints missing portraits (Meta Muse Image) |
+| `npm run visions` | Paints missing pictures in `data/visions.json` |
+| `npm run visions:png -- <dir>` | Renders frames of pictures arriving on the stage |
 
 ## Code
 
@@ -91,7 +98,8 @@ Then FaceTime **Video** the line.
 | [src/council.ts](src/council.ts) | A call: listen, one Gemini turn, speak each line, keep the stage in sync with the audio |
 | [src/script.ts](src/script.ts) | The prompt, the guardrails, and the streaming line parser |
 | [src/gemini.ts](src/gemini.ts) | Streaming text and speech with key/model fallback; the `say` fallback |
-| [src/stage.ts](src/stage.ts) | The video: portraits, subtitles, painting, what the camera saw |
+| [src/stage.ts](src/stage.ts) | The video: portraits, subtitles, pictures, drifting light and waves, what the camera saw |
+| [src/visions.ts](src/visions.ts) | Which picture goes with which line; paints new ones when the library has none |
 | [src/bridge.ts](src/bridge.ts) | LiveKit room ↔ Council (caller audio + camera in, voice + video out) |
 | [src/chert.ts](src/chert.ts) | Takes calls from the Chert line |
 | [src/roster.ts](src/roster.ts) | The 16 members: who they are, their voices |

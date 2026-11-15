@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { createCanvas, GlobalFonts, loadImage, type Canvas, type Image, type SKRSContext2D } from "@napi-rs/canvas";
 import { ROSTER, byId } from "./roster.ts";
+import type { Vision } from "./visions.ts";
 
 const asset = (p: string) => fileURLToPath(new URL(`../assets/${p}`, import.meta.url));
 GlobalFonts.registerFromPath(asset("fonts/BarlowSemiCondensed-Medium.ttf"), "Barlow Medium");
@@ -76,6 +77,27 @@ export const artReady = (async () => {
     portraits.set(m.id, { color, speak: existsSync(speak) ? await loadImage(speak) : undefined, ink: inked(color, 360) });
   }));
 })();
+
+// Library pictures, decoded once per process: full colour plus the ink version they bloom out of.
+type VisionArt = { color: Image; ink: Canvas };
+const visionArt = new Map<string, Promise<VisionArt | null>>();
+function loadVision(v: Vision): Promise<VisionArt | null> {
+  let p = visionArt.get(v.id);
+  if (!p) {
+    p = loadImage(v.file).then((color) => ({ color, ink: inked(color, 420) })).catch(() => null);
+    visionArt.set(v.id, p);
+  }
+  return p;
+}
+
+type Shape = "medallion" | "arch" | "card";
+type Show = {
+  v: Vision; art?: VisionArt; start: number; end?: number; side: -1 | 1; shape: Shape;
+  z0: number; z1: number; f0: [number, number]; f1: [number, number]; flip: boolean; tilt: number; phase: number;
+};
+const ease = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
 // ---------------------------------------------------------------- drawing helpers
 
@@ -189,7 +211,36 @@ export class Stage {
     this.ctx = this.canvas.getContext("2d");
   }
 
+  private shows: Show[] = [];
+  private lastSide: -1 | 1 = -1;
+  private lastShape: Shape = "card";
+
   set(patch: Partial<StageState>) { Object.assign(this.state, patch); }
+
+  /**
+   * Bring a picture onto the stage beside the Council. Every showing is framed and moved a little differently
+   * (shape, crop, slow pan, mirror), so a picture seen twice doesn't look like the same slide.
+   */
+  showVision(v: Vision) {
+    const now = Date.now();
+    for (const s of this.shows) s.end ??= now;
+    // the side away from the camera panel, otherwise the other side from last time
+    const side: -1 | 1 = this.state.saw && this.state.sawFrame ? 1 : (this.lastSide === 1 ? -1 : 1);
+    const shapes = (["medallion", "arch", "card"] as Shape[]).filter((x) => x !== this.lastShape);
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    this.lastSide = side; this.lastShape = shape;
+    const z0 = rand(1.0, 1.15), z1 = z0 + rand(0.1, 0.25) * (Math.random() < 0.3 ? -0.6 : 1);
+    const show: Show = {
+      v, start: now, side, shape, z0, z1: Math.max(1, z1),
+      f0: [rand(0.35, 0.65), rand(0.35, 0.6)], f1: [rand(0.35, 0.65), rand(0.35, 0.6)],
+      flip: Math.random() < 0.35 && !v.fresh, tilt: rand(-0.05, 0.05), phase: rand(0, 6),
+    };
+    this.shows.push(show);
+    void loadVision(v).then((art) => { if (art) { show.art = art; show.start = Date.now(); } });
+    this.shows = this.shows.slice(-3);
+  }
+
+  clearVisions() { const now = Date.now(); for (const s of this.shows) s.end ??= now; }
 
   /** Draw the current state; returns RGBA pixels. */
   render(): Uint8ClampedArray {
@@ -221,17 +272,21 @@ export class Stage {
       const mask = ctx.createRadialGradient(w / 2, 220, 60, w / 2, 220, 330);
       ctx.globalAlpha = 0.2;
       ctx.beginPath(); ctx.ellipse(w / 2, 225, 330, 190, 0, 0, Math.PI * 2); ctx.clip();
-      cover(ctx, sc, w / 2 - 330, 35, 660, 380, 0.4);
+      const drift = Math.sin(t * 0.07) * 24, zoom = 1.06 + 0.04 * Math.sin(t * 0.05);
+      cover(ctx, sc, w / 2 - 330 * zoom + drift, 225 - 190 * zoom, 660 * zoom, 380 * zoom, 0.4);
       ctx.globalAlpha = 1;
       mask.addColorStop(0, "rgba(246,237,223,0)"); mask.addColorStop(1, "rgba(246,237,223,0.9)");
       ctx.fillStyle = mask; ctx.fillRect(0, 0, w, h);
       ctx.restore();
     }
 
+    this.motes(t);
+
     // the sea darkens under the subtitles
     const sea = ctx.createLinearGradient(0, 372, 0, h);
     sea.addColorStop(0, "rgba(7,26,42,0)"); sea.addColorStop(0.28, "rgba(7,26,42,0.72)"); sea.addColorStop(1, "rgba(7,26,42,0.96)");
     ctx.fillStyle = sea; ctx.fillRect(0, 372, w, h - 372);
+    this.waves(t);
 
     // masthead
     ctx.fillStyle = NAVY;
@@ -258,6 +313,7 @@ export class Stage {
       const x = (w - rowW) / 2 + i * (cw + gap);
       this.seat(id, x, top, cw, ch, st.speaker === id && st.phase === "speaking", idle, st.mouth, t);
     }
+    if (!idle) this.visions((w - rowW) / 2, t);
 
     // the sea: what is being said, or what to do
     const subY = 432;
@@ -350,6 +406,133 @@ export class Stage {
     ctx.fillStyle = STEEL;
     ctx.font = `${w < 110 ? 10.5 : 11.5}px "Barlow Medium"`;
     tracked(ctx, (m?.title ?? "").toUpperCase(), cx, y + h + 40, 0.8);
+    ctx.restore();
+  }
+
+  /** Pictures beside the Council: they bloom from ink into colour, drift slowly, and fade when the next arrives. */
+  private visions(sideW: number, t: number) {
+    const { ctx } = this;
+    const now = Date.now();
+    this.shows = this.shows.filter((s) => !s.end || now - s.end < 700);
+    const size = Math.max(136, Math.min(200, sideW - 48));
+    for (const s of this.shows) {
+      if (!s.art) continue;
+      const age = now - s.start;
+      const enter = ease(age / 750);
+      const exit = s.end ? 1 - ease((now - s.end) / 650) : 1;
+      if (exit <= 0) continue;
+      const cx = s.side < 0 ? sideW / 2 - 4 : 960 - sideW / 2 + 4;
+      const cy = 232 + Math.sin(t * 0.9 + s.phase) * 4 - (1 - exit) * 16 + (1 - enter) * 18;
+      const W = s.shape === "medallion" ? size : s.shape === "arch" ? size * 0.82 : size * 0.98;
+      const H = s.shape === "medallion" ? size : s.shape === "arch" ? size * 1.1 : size * 0.8;
+      const path = () => {
+        ctx.beginPath();
+        if (s.shape === "medallion") ctx.arc(0, 0, W / 2, 0, Math.PI * 2);
+        else if (s.shape === "arch") arch(ctx, -W / 2, -H / 2, W, H);
+        else ctx.roundRect(-W / 2, -H / 2, W, H, 4);
+      };
+      ctx.save();
+      ctx.globalAlpha = enter * exit;
+      ctx.translate(cx, cy);
+      ctx.rotate((s.shape === "card" ? s.tilt : s.tilt * 0.25) + Math.sin(t * 0.6 + s.phase) * 0.006);
+      const sc = 0.84 + 0.16 * enter;
+      ctx.scale(sc, sc);
+
+      // a soft warm light behind it while it arrives
+      const glow = (1 - clamp01((age - 600) / 1600)) * 0.55 + 0.18;
+      const g = ctx.createRadialGradient(0, 0, W * 0.3, 0, 0, W * 0.85);
+      g.addColorStop(0, `rgba(232,201,122,${glow})`); g.addColorStop(1, "rgba(232,201,122,0)");
+      ctx.fillStyle = g; ctx.fillRect(-W, -H, W * 2, H * 2);
+
+      // mount: parchment card with a shadow, or the double rule of the seats
+      ctx.save();
+      ctx.shadowColor = "rgba(7,26,42,0.4)"; ctx.shadowBlur = 16; ctx.shadowOffsetY = 5;
+      ctx.fillStyle = s.shape === "card" ? PARCH : GOLD;
+      ctx.beginPath();
+      if (s.shape === "medallion") ctx.arc(0, 0, W / 2 + 4, 0, Math.PI * 2);
+      else if (s.shape === "arch") arch(ctx, -W / 2 - 3.5, -H / 2 - 3.5, W + 7, H + 7);
+      else ctx.roundRect(-W / 2 - 8, -H / 2 - 8, W + 16, H + 16, 5);
+      ctx.fill();
+      ctx.restore();
+
+      // the picture: slow pan and zoom; ink first, colour spreading out from the centre
+      ctx.save();
+      path(); ctx.clip();
+      const k = clamp01(age / 14000);
+      const zoom = s.z0 + (s.z1 - s.z0) * k;
+      const fx = s.f0[0] + (s.f1[0] - s.f0[0]) * k, fy = s.f0[1] + (s.f1[1] - s.f0[1]) * k;
+      const drawPic = (img: Pic) => {
+        const base = Math.max(W / img.width, H / img.height) * zoom;
+        const dw = img.width * base, dh = img.height * base;
+        const dx = -W / 2 - (dw - W) * fx, dy = -H / 2 - (dh - H) * fy;
+        ctx.save();
+        if (s.flip) ctx.scale(-1, 1);
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.restore();
+      };
+      drawPic(s.art.ink);
+      const bloom = ease((age - 200) / 1500);
+      if (bloom > 0) {
+        ctx.beginPath(); ctx.arc(0, 0, Math.hypot(W, H) * 0.55 * bloom + 1, 0, Math.PI * 2); ctx.clip();
+        drawPic(s.art.color);
+      }
+      // keep the edges soft
+      const v = ctx.createRadialGradient(0, 0, Math.min(W, H) * 0.35, 0, 0, Math.max(W, H) * 0.62);
+      v.addColorStop(0, "rgba(7,26,42,0)"); v.addColorStop(1, "rgba(7,26,42,0.35)");
+      ctx.fillStyle = v; ctx.fillRect(-W / 2, -H / 2, W, H);
+      ctx.restore();
+
+      ctx.strokeStyle = s.shape === "card" ? "rgba(26,58,82,0.45)" : PARCH; ctx.lineWidth = 1;
+      path(); ctx.stroke();
+
+      // sparks thrown off as it lands
+      if (age < 1600) {
+        const life = age / 1600;
+        ctx.fillStyle = GOLD;
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2 + s.phase;
+          const r = (Math.max(W, H) / 2) * (0.9 + life * 0.55 + (i % 3) * 0.06);
+          ctx.globalAlpha = enter * exit * (1 - life) * 0.9;
+          ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r, 1.6 + (i % 2), 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  /** Gold motes drifting up through the sky, brighter while someone speaks. */
+  private motes(t: number) {
+    const { ctx } = this;
+    const speaking = this.state.phase === "speaking";
+    ctx.save();
+    ctx.fillStyle = GOLD;
+    for (let i = 0; i < 28; i++) {
+      const seed = Math.sin(i * 12.9898) * 43758.5453, r = seed - Math.floor(seed);
+      const speed = 6 + r * 10;
+      const x = (r * 960 + Math.sin(t * 0.3 + i) * 22 + 960) % 960;
+      const y = 380 - (((t * speed) + r * 380) % 380);
+      const tw = 0.5 + 0.5 * Math.sin(t * (1.3 + r) + i);
+      ctx.globalAlpha = (speaking ? 0.5 : 0.28) * tw * Math.min(1, y / 60);
+      ctx.beginPath(); ctx.arc(x, y, 1 + r * 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /** Slow swells across the dark sea under the subtitles. */
+  private waves(t: number) {
+    const { ctx } = this;
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let j = 0; j < 4; j++) {
+      const y0 = 392 + j * 34, amp = 3 + j * 1.2, len = 120 + j * 30, speed = 14 + j * 6;
+      ctx.strokeStyle = `rgba(232,201,122,${0.06 + j * 0.015})`;
+      ctx.beginPath();
+      for (let x = 0; x <= 960; x += 12) {
+        const y = y0 + Math.sin((x + t * speed) / len * Math.PI * 2) * amp + Math.sin((x - t * speed * 0.6) / (len * 0.43)) * amp * 0.4;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
