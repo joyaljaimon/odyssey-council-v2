@@ -106,6 +106,7 @@ different from a phone call: the Council sees what you show it.
 
 ## Credits
 
-The Odyssey, translated by Samuel Butler (1900, public domain, Project Gutenberg). Portraits and paintings generated
-with Meta Muse Image. Fonts: Cinzel and EB Garamond (SIL Open Font License, `assets/fonts/`). The characters are AI and
+The Odyssey, translated by Samuel Butler (1900, public domain, Project Gutenberg). Portraits, paintings and the backdrop generated
+with Meta Muse Image; the stage's look follows the HackUTA 2026 Odyssey theme. Fonts: Barlow Semi Condensed, EB Garamond
+and Cinzel (SIL Open Font License, `assets/fonts/`). The characters are AI and
 say so; calls are not recorded.

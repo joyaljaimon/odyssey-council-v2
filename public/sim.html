@@ -4,22 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Odyssey Council · Call simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --ink: #0b0907; --gold: #e8c15a; --cream: #f4ecdc; }
+  :root { --navy: #1a3a52; --deep: #102f46; --abyss: #071a2a; --parch: #f6eddf; --parch2: #eee3d2; --gold: #e8c97a; }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; background: var(--ink); color: var(--cream); font-family: Georgia, serif; display: grid; place-items: center; }
-  main { width: min(100vw - 32px, 1100px); }
-  .screen { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, var(--deep), var(--abyss)); color: var(--parch); font-family: "Barlow Semi Condensed", "Arial Narrow", sans-serif; display: grid; place-items: center; }
+  main { width: min(100vw - 32px, 1100px); padding: 24px 0; }
+  h1 { font: 600 13px "Barlow Semi Condensed", sans-serif; letter-spacing: .3em; text-align: center; color: var(--gold); margin: 0 0 16px; }
+  .screen { position: relative; aspect-ratio: 16 / 9; background: var(--abyss); border-radius: 14px; overflow: hidden; outline: 1px solid rgba(246,237,223,.25); outline-offset: 6px; box-shadow: 0 24px 70px rgba(0,0,0,.55); }
   .screen img { width: 100%; height: 100%; display: block; }
-  .screen video { position: absolute; right: 14px; bottom: 14px; width: 22%; border-radius: 12px; border: 2px solid rgba(232,193,90,.6); transform: scaleX(-1); background: #111; }
-  .start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(11,9,7,.85); }
-  button { font: 600 18px Georgia, serif; letter-spacing: .08em; padding: 14px 28px; border-radius: 999px; border: 1px solid var(--gold); background: transparent; color: var(--gold); cursor: pointer; }
-  button:hover { background: rgba(232,193,90,.12); }
-  p { opacity: .7; text-align: center; font-size: 14px; }
+  .screen video { position: absolute; right: 14px; bottom: 14px; width: 21%; border-radius: 10px; border: 2px solid var(--parch); transform: scaleX(-1); background: var(--deep); }
+  .start { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(7,26,42,.82); }
+  button { font: 700 15px "Barlow Semi Condensed", sans-serif; letter-spacing: .18em; text-transform: uppercase; padding: 15px 40px; border-radius: 999px; border: 0; background: linear-gradient(var(--parch), var(--parch2)); color: var(--navy); cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  button:hover { filter: brightness(1.04); }
+  p { color: rgba(246,237,223,.7); text-align: center; font-size: 15px; letter-spacing: .02em; margin-top: 22px; }
 </style>
 </head>
 <body>
 <main>
+  <h1>THE ODYSSEY COUNCIL · CALL SIMULATOR</h1>
   <div class="screen">
     <img id="stage" alt="The Council">
     <video id="cam" autoplay muted playsinline></video>
