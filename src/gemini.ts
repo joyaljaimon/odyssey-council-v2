@@ -16,7 +16,7 @@ const list = (v: string | undefined, d: string) => (v || d).split(",").map((s) =
 export const KEYS = list(process.env.GEMINI_API_KEYS, process.env.GEMINI_API_KEY ?? "");
 export const SCRIPT_MODELS = list(process.env.SCRIPT_MODELS, "gemini-3.1-flash-lite,gemini-flash-lite-latest,gemini-2.5-flash-lite,gemini-3.5-flash-lite,gemini-2.5-flash");
 export const TTS_MODELS = list(process.env.TTS_MODELS, "gemini-3.8-flash-lite-tts,gemini-3.1-flash-tts-preview,gemini-3.8-flash-tts,gemini-2.5-flash-preview-tts");
-const FIRST_CHUNK_MS = Number(process.env.FIRST_CHUNK_MS ?? 6000);
+const FIRST_CHUNK_MS = Number(process.env.FIRST_CHUNK_MS ?? 3500); // healthy models answer in ~1 s; a stalled one costs at most this
 export const TTS_RATE = 24000; // Gemini TTS: PCM16 mono 24 kHz
 
 // ---------------------------------------------------------------- key/model health

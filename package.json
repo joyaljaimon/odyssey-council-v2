@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "FaceTime the gods and heroes of Homer's Odyssey. Ask anything; the characters who were there answer, each in their own voice.",
-  "engines": { "node": ">=22 <25 || ^26" },
+  "engines": {
+    "node": ">=22 <25 || ^26"
+  },
   "scripts": {
     "start": "tsx --env-file-if-exists=.env src/chert.ts start",
     "sim": "tsx --env-file-if-exists=.env src/sim.ts",
@@ -13,12 +15,15 @@
     "e2e": "tsx --env-file-if-exists=.env tools/e2e.ts",
     "portraits": "tsx --env-file-if-exists=.env tools/build-portraits.ts",
     "stage:png": "tsx --env-file-if-exists=.env tools/stage-png.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "group-call": "tsx --env-file-if-exists=.env src/group-call.ts",
+    "room-test": "tsx --env-file-if-exists=.env tools/room-test.ts"
   },
   "dependencies": {
     "@livekit/agents": "1.9.4",
     "@livekit/rtc-node": "1.2.1",
     "@napi-rs/canvas": "1.0.13",
+    "livekit-server-sdk": "^2.19.2",
     "ws": "^8.18.0"
   },
   "devDependencies": {

@@ -17,7 +17,8 @@ THE COUNCIL (use these exact names)
 ${ROSTER.map((m) => `- ${m.name.toUpperCase()}: ${m.who}`).join("\n")}
 
 OUTPUT FORMAT (nothing else, no markdown, no blank lines)
-HEARD: <the caller's words, transcribed exactly from the audio>
+HEARD: <what was said, transcribed exactly. If more than one person spoke, label each part with who said it: "Sam: ... / Joyal: ...">
+CALLERS: <everyone you have heard on this call so far, by name if they said it (or it shows on screen), else Caller 1, Caller 2... comma-separated>
 SAW: <only if the camera shows something the caller shows, points to or asks about; a short phrase. Otherwise leave this line out>
 TOPIC: <a 2-6 word title for what is being discussed>
 SCENE: <one of ${SCENES.join(", ")}, or none: the episode the answer is about>
@@ -33,6 +34,12 @@ HOW TO ANSWER
 - Personal questions ("I can't stop procrastinating", "should I quit my job?") are welcome when the caller connects them to the story or asks the Council's advice: the members answer from what they lived through (the Lotus-eaters, Calypso's island). Keep it warm and practical. You are not a therapist.
 - If the caller seems in danger or mentions self-harm: ATHENA alone answers, says plainly she is an AI, and urges them to call or text 988 (US) or local emergency services.
 
+SEVERAL PEOPLE ON THE CALL
+- Everyone in the audio is a caller, never a Council member: never label a caller with a Council member's name (a voice saying "Council, settle this" is Caller 3, not Athena).
+- This may be a group FaceTime: everyone's voice arrives mixed in one recording. Tell the voices apart (pitch, accent, turn-taking) and keep each person's label the same for the whole call. When someone says their name ("I'm Sam"), use it from then on.
+- The camera image may show the FaceTime window with several tiles and name labels; the enlarged or highlighted tile is usually the person speaking. Use names you can read there.
+- When more than one person spoke, the Council answers them as people: at least one line names a caller ("Sam, you forget Thrinacia..."), and when they disagree, members take sides, one backing each caller by name.
+
 THE CAMERA
 - The image is the caller's live FaceTime camera. When they hold something up, point at something, or ask "what is this?" / "look at this", the Council reacts to it through the Odyssey: an object becomes a symbol or a memory (a phone is the Sirens' song, a dog is Argos, a bow is the contest of the axes, a cup is Circe's). Mention what you see so the caller knows you saw it.
 - Never comment on the caller's face, body, age, looks or identity. If the image doesn't matter to the question, ignore it and leave out SAW.
@@ -46,6 +53,7 @@ ${CODEX ? `THE CODEX (your knowledge of the whole book, book by book)\n${CODEX}`
 
 export type ScriptEvent =
   | { kind: "heard"; text: string }
+  | { kind: "callers"; names: string[] }
   | { kind: "saw"; text: string }
   | { kind: "topic"; text: string }
   | { kind: "scene"; id: string | null }
@@ -80,6 +88,7 @@ export async function* councilTurn(input: Input, history: Turn[], signal?: Abort
     const tag = m[1].trim().toUpperCase();
     const text = m[2].replace(/\*+/g, "").replace(/^["“]|["”]$/g, "").trim();
     if (tag === "HEARD") { if (!seen.heard) { seen.heard = true; yield { kind: "heard", text }; } return; }
+    if (tag === "CALLERS") { const names = text.split(/\s*,\s*/).map((n) => n.trim()).filter((n) => n && n !== "-").slice(0, 6); if (names.length) yield { kind: "callers", names }; return; }
     if (tag === "SAW") { if (!seen.saw && text && !/^(none|nothing|-)$/i.test(text)) { seen.saw = true; yield { kind: "saw", text }; } return; }
     if (tag === "TOPIC") { if (!seen.topic) { seen.topic = true; yield { kind: "topic", text } } return; }
     if (tag === "SCENE") { if (!seen.scene) { seen.scene = true; const id = text.toLowerCase().replace(/[^a-z-]/g, ""); yield { kind: "scene", id: SCENES.includes(id) ? id : null }; } return; }

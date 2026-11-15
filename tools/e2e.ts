@@ -15,9 +15,13 @@ const image = process.argv[4] ? readFileSync(process.argv[4]) : null;
 mkdirSync(out, { recursive: true });
 await artReady;
 
+// "A || B || C": several people, each in a different voice, with short pauses (one mixed recording, like a group call)
+const VOICES = ["Samantha", "Daniel", "Karen", "Fred"];
 const f = join(tmpdir(), "council-q.wav");
-execFileSync("say", ["-v", "Samantha", "-o", f, "--file-format=WAVE", "--data-format=LEI16@16000", question]);
-const q = wavData(readFileSync(f));
+const q = Buffer.concat(question.split("||").map((part, i) => {
+  execFileSync("say", ["-v", VOICES[i % VOICES.length], "-o", f, "--file-format=WAVE", "--data-format=LEI16@16000", part.trim()]);
+  return Buffer.concat([wavData(readFileSync(f)), Buffer.alloc(16000 * 2 * 0.35)]);
+}));
 
 const audio: Buffer[] = [];
 let firstAudio = 0;

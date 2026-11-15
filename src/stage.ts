@@ -21,6 +21,7 @@ export type StageState = {
   heard?: string;
   saw?: string;
   sawFrame?: Image | null;
+  callers?: string[]; // people on a group call, as the Council knows them
   scene?: string | null;
   seats: string[]; // members in this turn, in order of appearance
   speaker?: string;
@@ -242,6 +243,7 @@ export class Stage {
       f.lines.forEach((l, i) => ctx.fillText(l, x, y + Math.min(th, 120) + 34 + i * 16));
     }
 
+    if (st.callers && st.callers.length > 1) this.callers(st.callers, w);
     this.status(w, h, t);
     ctx.restore();
   }
@@ -290,6 +292,18 @@ export class Stage {
     ctx.font = `${w < 120 ? 11 : 12.5}px "Garamond Italic"`;
     ctx.fillText(m?.title ?? "", cx, y + h + 38);
     ctx.restore();
+  }
+
+  /** Top right: who is on a group call. */
+  private callers(names: string[], w: number) {
+    const { ctx } = this;
+    ctx.textAlign = "right";
+    ctx.fillStyle = GOLD;
+    ctx.font = `11px "Cinzel"`;
+    ctx.fillText("ON THE CALL", w - 34, 40);
+    ctx.fillStyle = CREAM;
+    ctx.font = `16px "Garamond Italic"`;
+    names.slice(0, 5).forEach((n, i) => ctx.fillText(n, w - 34, 60 + i * 19));
   }
 
   private status(w: number, h: number, t: number) {

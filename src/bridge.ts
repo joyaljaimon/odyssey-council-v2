@@ -93,6 +93,9 @@ export class Bridge {
     }
   }
 
+  /** Outbound calls: nothing sets the room signal, so the caller of this method reports bridge_ready from Chert's events. */
+  markReady() { this.onReady(); }
+
   /** FaceTime is ready: greet now (Chert ends calls that stay silent for 10 s). */
   private onReady() {
     if (this.greeted || this.closed) return;

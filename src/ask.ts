@@ -24,5 +24,5 @@ for await (const ev of councilTurn({ text: `The caller says: "${question}"`, fra
       writeFileSync(f, toWav(Buffer.concat(parts), TTS_RATE));
       execFileSync("afplay", [f]);
     }
-  } else console.log(`${ms}  [${ev.kind}] ${"text" in ev ? ev.text : ev.id}`);
+  } else console.log(`${ms}  [${ev.kind}] ${"text" in ev ? ev.text : "names" in ev ? ev.names.join(", ") : ev.id}`);
 }

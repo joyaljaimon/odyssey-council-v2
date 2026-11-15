@@ -100,6 +100,9 @@ export class Council {
           console.log(`[council ${this.id}] heard: "${heard}" (${Date.now() - t0} ms)`);
           if (heard === "-" || !heard) break; // no clear speech: back to listening, quietly
           this.stage.set({ heard });
+        } else if (ev.kind === "callers") {
+          if (ev.names.length > 1 || this.stage.state.callers?.length) this.stage.set({ callers: ev.names });
+          console.log(`[council ${this.id}] on the call: ${ev.names.join(", ")}`);
         } else if (ev.kind === "saw" && frame) {
           const img = await imageFromJpeg(frame);
           this.stage.set({ saw: ev.text, sawFrame: img });
