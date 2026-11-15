@@ -18,6 +18,7 @@ const IN_RATE = 16000;
 const FPS = Number(process.env.STAGE_FPS ?? 15);
 const FRAME_MS = 20;
 
+const READY_FALLBACK_MS = Number(process.env.READY_FALLBACK_MS ?? 4000);
 export const isChertCaller = (p: RemoteParticipant) => p.identity.startsWith("chert-bridge-");
 const bridgeReady = (metadata: string | undefined) => { try { return JSON.parse(metadata || "{}")?.chert_bridge_ready === true; } catch { return false; } };
 
@@ -78,6 +79,8 @@ export class Bridge {
     const check = () => { if (bridgeReady(this.room.metadata)) { this.room.off(RoomEvent.RoomMetadataChanged, check); this.onReady(); } };
     this.room.on(RoomEvent.RoomMetadataChanged, check);
     check();
+    // Also poll it, in case the change event is missed.
+    const poll = setInterval(() => { if (this.greeted || this.closed) clearInterval(poll); else check(); }, 500);
     console.log(`[bridge ${this.sessionId}] in the room; waiting for FaceTime`);
   }
 
@@ -86,6 +89,13 @@ export class Bridge {
       this.callerAudio = track;
       console.log(`[bridge ${this.sessionId}] caller audio subscribed`);
       void this.readCallerAudio(track);
+      // The caller's audio is flowing, so FaceTime is up. If Chert's ready signal never arrives, greet anyway
+      // rather than sit silent (Chert ends calls that stay quiet).
+      setTimeout(() => {
+        if (this.greeted || this.closed) return;
+        console.warn(`[bridge ${this.sessionId}] no ready signal from Chert ${READY_FALLBACK_MS} ms after the caller's audio arrived; greeting anyway`);
+        this.onReady();
+      }, READY_FALLBACK_MS);
     } else if (track.kind === TrackKind.KIND_VIDEO && !this.callerVideo) {
       this.callerVideo = track;
       console.log(`[bridge ${this.sessionId}] caller camera subscribed`);
